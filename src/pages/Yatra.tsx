@@ -14,7 +14,7 @@ export function Places() {
   const list = PLACES.filter((p) => !q || (p.name + p.state + p.type).toLowerCase().includes(q.toLowerCase()));
   return (
     <>
-      <PageHero eyebrow="Tirtha Kshetra · Bharat" title="Spiritual Places of India" sub="From Himalayan dhams to island temples — significance, attractions, best time and how to reach." image="/images/yatra-himalaya.jpg" />
+      <PageHero eyebrow="Tirtha Kshetra · Bharat" title="Spiritual Places of India" sub="From Himalayan dhams to island temples — significance, attractions, best time and how to reach." image="/images/yatra-himalaya.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Spiritual Places" }]} />
         <label className="mt-6 flex items-center gap-2 rounded-2xl border border-orange-900/15 bg-white px-4 py-3"><Search size={16} className="text-orange-600" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search places… (e.g., Kashi, Char Dham, Madurai)" className="w-full bg-transparent text-sm outline-none" aria-label="Search places" /></label>
@@ -31,7 +31,7 @@ export function Packages() {
   const list = PACKAGES.filter((p) => p.price <= max);
   return (
     <>
-      <PageHero eyebrow="Yatra · Premium Pilgrimage" title="Signature Yatra Packages" sub="Small groups, sattvic stays, darshan assistance and acharya guidance — travel as sadhana." image="/images/hero-kedarnath.jpg">
+      <PageHero eyebrow="Yatra · Premium Pilgrimage" title="Signature Yatra Packages" sub="Small groups, sattvic stays, darshan assistance and acharya guidance — travel as sadhana." image="/images/hero-kedarnath.jpeg">
         <Link to="/spiritual-places" className="rounded-2xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-bold backdrop-blur transition hover:bg-white/20">Explore Places First</Link>
       </PageHero>
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
@@ -82,7 +82,7 @@ export function PlaceDetail() {
             <div className="rounded-2xl border border-orange-900/10 bg-white p-5 md:col-span-2"><p className="text-[11px] font-bold uppercase tracking-widest text-orange-700">How to Reach</p><p className="mt-1 text-sm text-stone-600">{p.reach}</p></div>
           </Reveal>
           <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold text-[#2a1a10]">Nearby Sacred Places</h2><div className="mt-3 grid gap-2 sm:grid-cols-2">{p.nearby.map((n) => <span key={n} className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-stone-700 ring-1 ring-orange-900/10">{n}</span>)}</div></Reveal>
-          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold text-[#2a1a10]">Glimpses</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={p.image} alt={p.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/hero-varanasi.jpg" alt="Sacred ghats" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpg" alt="Evening aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
+          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold text-[#2a1a10]">Glimpses</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={p.image} alt={p.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/hero-varanasi.jpeg" alt="Sacred ghats" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpeg" alt="Evening aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
         </div>
         <aside className="mt-10 lg:mt-0"><div className="lg:sticky lg:top-28"><EnquiryForm context={`Place enquiry: ${p.name}`} title="Plan My Visit" /></div></aside>
       </div>
@@ -138,7 +138,7 @@ export function PackageDetail() {
             <div className="rounded-3xl border border-red-200 bg-red-50/60 p-6"><h3 className="flex items-center gap-2 font-bold text-red-950"><XCircle size={18} /> Exclusions</h3><ul className="mt-3 space-y-1.5">{pk.exclusions.map((x) => <li key={x} className="text-sm text-red-950/80">✕ {x}</li>)}</ul></div>
           </Reveal>
           <Reveal className="mt-8"><h2 className="font-display flex items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><FileText size={22} className="text-orange-600" /> Terms</h2><ul className="mt-3 space-y-1.5">{pk.terms.map((x) => <li key={x} className="text-sm text-stone-600">• {x}</li>)}</ul></Reveal>
-          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold">Glimpses of this route</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={pk.image} alt={pk.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/hero-varanasi.jpg" alt="Ganga ghats" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpg" alt="Aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
+          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold">Glimpses of this route</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={pk.image} alt={pk.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/hero-varanasi.jpeg" alt="Ganga ghats" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpeg" alt="Aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
         </div>
         <aside className="mt-10 lg:mt-0"><div className="space-y-4 lg:sticky lg:top-28">
           <div className="rounded-3xl bg-[#1c1410] p-6 text-center text-white"><p className="text-xs uppercase tracking-[0.25em] text-amber-400">Starting price</p><p className="font-display mt-1 text-4xl font-bold text-amber-300">{inr(pk.price)}</p><p className="text-xs text-stone-400">per person on twin sharing</p><Link to={`/packages/${pk.slug}/enquiry`} className="btn-saffron mt-4 block rounded-2xl px-4 py-3.5 text-sm font-bold text-white">Enquire / Reserve Seat</Link><a href={wa} target="_blank" rel="noreferrer" className="mt-2 block rounded-2xl bg-[#25D366] px-4 py-3 text-sm font-bold text-white">WhatsApp Yatra Desk</a></div>

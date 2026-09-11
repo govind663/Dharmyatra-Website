@@ -15,7 +15,7 @@ export function CourseList() {
   const list = COURSES.filter((c) => !cat || c.category === cat);
   return (
     <>
-      <PageHero eyebrow="Vidya · Sadhana" title="Cultural Courses" sub="Learn from practising acharyas — live batches, small cohorts, recordings and certification." image="/images/yoga-course.jpg" />
+      <PageHero eyebrow="Vidya · Sadhana" title="Cultural Courses" sub="Learn from practising acharyas — live batches, small cohorts, recordings and certification." image="/images/yoga-course.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Courses" }]} />
         <div className="mt-6 flex flex-wrap gap-2">

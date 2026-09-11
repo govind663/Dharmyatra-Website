@@ -10,7 +10,7 @@ export function About() {
   useSEO({ title: "About DivyaDhara — Mission, Trust & Philosophy | DivyaDhara", description: "DivyaDhara is India's premium digital spiritual ecosystem — our story, mission, philosophy, verification promise and community seva.", path: "/about", schema: orgSchema() });
   return (
     <>
-      <PageHero eyebrow="About · Our Sankalpa" title="Carrying Bharat's Sacred Light, Digitally" sub="We are sevaks first, technologists second — building the trusted bridge between timeless tradition and modern pilgrims." image="/images/hero-varanasi.jpg" />
+      <PageHero eyebrow="About · Our Sankalpa" title="Carrying Bharat's Sacred Light, Digitally" sub="We are sevaks first, technologists second — building the trusted bridge between timeless tradition and modern pilgrims." image="/images/hero-varanasi.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "About" }]} />
         <div className="mt-10 grid items-center gap-10 lg:grid-cols-2">
@@ -25,7 +25,7 @@ export function About() {
           </Reveal>
           <Reveal delay={0.1}>
             <div className="relative overflow-hidden rounded-[2rem]">
-              <img src="/images/ashram-dawn.jpg" alt="Ashram at dawn" className="h-[420px] w-full object-cover" />
+              <img src="/images/ashram-dawn.jpeg" alt="Ashram at dawn" className="h-[420px] w-full object-cover" />
               <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-black/55 p-5 text-white backdrop-blur">
                 <p className="font-sanskrit text-lg text-amber-300">॥ सेवा परमो धर्मः ॥</p>
                 <p className="text-sm text-stone-200">Seva is the highest dharma — our team's operating mantra.</p>
@@ -91,7 +91,7 @@ export function Contact() {
   const input = "w-full rounded-xl border border-orange-900/15 bg-white px-4 py-3 text-sm outline-none placeholder:text-stone-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200";
   return (
     <>
-      <PageHero eyebrow="Sampark · Contact" title="We're Here to Serve" sub="Seva desk open 7 AM – 10 PM IST · Replies within a few hours in 7 languages." image="/images/hero-varanasi.jpg" />
+      <PageHero eyebrow="Sampark · Contact" title="We're Here to Serve" sub="Seva desk open 7 AM – 10 PM IST · Replies within a few hours in 7 languages." image="/images/hero-varanasi.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Contact" }]} />
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.1fr]">

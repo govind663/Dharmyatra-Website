@@ -9,7 +9,7 @@ export type SEOProps = {
   schema?: object | object[];
 };
 
-export function useSEO({ title, description, path = "/", image = "/images/hero-varanasi.jpg", schema }: SEOProps) {
+export function useSEO({ title, description, path = "/", image = "/images/hero-varanasi.jpeg", schema }: SEOProps) {
   useEffect(() => {
     document.title = title;
     const set = (sel: string, attr: string, val: string, createTag = "meta") => {

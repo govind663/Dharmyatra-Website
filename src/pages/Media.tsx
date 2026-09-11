@@ -8,12 +8,12 @@ import { PageHero } from "../components/blocks";
 import { formatDate } from "../lib/utils";
 
 const VIDEO_FAKE = [
-  { title: "Saptarishi Aarti — Kashi Vishwanath (Evening)", len: "24:10", img: "/images/aarti-night.jpg", tag: "Live Aarti" },
-  { title: "Bhasma Aarti Darshan — Mahakaal Ujjain (4 AM)", len: "18:42", img: "/images/havan-fire.jpg", tag: "Aarti" },
-  { title: "Char Dham Helicopter Yatra — Full Film", len: "12:35", img: "/images/yatra-himalaya.jpg", tag: "Yatra" },
-  { title: "Meenakshi Thirukalyanam — Celestial Wedding", len: "09:58", img: "/images/temple-south.jpg", tag: "Festival" },
-  { title: "Rudrabhishek Vidhi — Step-by-Step with Shastri ji", len: "15:20", img: "/images/puja-thali.jpg", tag: "Puja" },
-  { title: "Morning Yoga on the Ganga — Rishikesh", len: "11:04", img: "/images/yoga-course.jpg", tag: "Yoga" },
+  { title: "Saptarishi Aarti — Kashi Vishwanath (Evening)", len: "24:10", img: "/images/aarti-night.jpeg", tag: "Live Aarti" },
+  { title: "Bhasma Aarti Darshan — Mahakaal Ujjain (4 AM)", len: "18:42", img: "/images/havan-fire.jpeg", tag: "Aarti" },
+  { title: "Char Dham Helicopter Yatra — Full Film", len: "12:35", img: "/images/yatra-himalaya.jpeg", tag: "Yatra" },
+  { title: "Meenakshi Thirukalyanam — Celestial Wedding", len: "09:58", img: "/images/temple-south.jpeg", tag: "Festival" },
+  { title: "Rudrabhishek Vidhi — Step-by-Step with Shastri ji", len: "15:20", img: "/images/puja-thali.jpeg", tag: "Puja" },
+  { title: "Morning Yoga on the Ganga — Rishikesh", len: "11:04", img: "/images/yoga-course.jpeg", tag: "Yoga" },
 ];
 
 export function Gallery() {
@@ -24,7 +24,7 @@ export function Gallery() {
   const list = GALLERY.filter((g) => !tag || g.tag === tag);
   return (
     <>
-      <PageHero eyebrow="Darshan Gallery" title="Sacred Gallery" sub="Dawn ghats, aarti flames and Himalayan trails — lazy-loaded and optimised." image="/images/hero-varanasi.jpg" />
+      <PageHero eyebrow="Darshan Gallery" title="Sacred Gallery" sub="Dawn ghats, aarti flames and Himalayan trails — lazy-loaded and optimised." image="/images/hero-varanasi.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Gallery" }]} />
         <div className="mt-6 flex flex-wrap gap-2">
@@ -59,7 +59,7 @@ export function Videos() {
   const [active, setActive] = useState<number | null>(null);
   return (
     <>
-      <PageHero eyebrow="Darshan Videos" title="Watch & Immerse" sub="Aartis, kathas and yatra films. Tap any card for a cinematic preview experience." image="/images/aarti-night.jpg" />
+      <PageHero eyebrow="Darshan Videos" title="Watch & Immerse" sub="Aartis, kathas and yatra films. Tap any card for a cinematic preview experience." image="/images/aarti-night.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Videos" }]} />
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -100,7 +100,7 @@ export function Articles() {
   useSEO({ title: "Wisdom & Guides — Panchang, Yatra, Sanskar | DivyaDhara", description: "Essays and practical guides: reading the Panchang, Bhasma Aarti, Char Dham preparation, Griha Pravesh muhurats, Sanskrit for beginners.", path: "/articles" });
   return (
     <>
-      <PageHero eyebrow="Jnana · Wisdom" title="Articles & Guides" sub="The meaning behind the rituals — researched, respectful, practical." image="/images/temple-corridor.jpg" />
+      <PageHero eyebrow="Jnana · Wisdom" title="Articles & Guides" sub="The meaning behind the rituals — researched, respectful, practical." image="/images/temple-corridor.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Articles" }]} />
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">

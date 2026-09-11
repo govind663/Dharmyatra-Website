@@ -15,7 +15,7 @@ export function EventList() {
   const list = EVENTS.filter((e) => !cat || e.category === cat);
   return (
     <>
-      <PageHero eyebrow="Utsav · Satsang · Katha" title="Spiritual Events" sub="Festivals, kathas, satsangs and cultural programmes — join in person or through live darshan." image="/images/festival-crowd.jpg" />
+      <PageHero eyebrow="Utsav · Satsang · Katha" title="Spiritual Events" sub="Festivals, kathas, satsangs and cultural programmes — join in person or through live darshan." image="/images/festival-crowd.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Events" }]} />
         <div className="mt-6 flex flex-wrap gap-2">
@@ -70,7 +70,7 @@ export function EventDetail() {
             <div className="rounded-3xl border border-orange-900/10 bg-white p-6 sacred-border"><h3 className="flex items-center gap-2 font-bold"><Users size={18} className="text-orange-600" /> Organizer</h3><p className="mt-2 text-sm text-stone-600">{e.organizer}</p></div>
             <div className="rounded-3xl border border-orange-900/10 bg-white p-6 sacred-border"><h3 className="flex items-center gap-2 font-bold"><Ticket size={18} className="text-orange-600" /> Venue</h3><p className="mt-2 text-sm text-stone-600">{e.venue}, {e.city}</p><div className="mt-3 overflow-hidden rounded-2xl"><iframe title={`Map ${e.venue}`} src={`https://www.google.com/maps?q=${encodeURIComponent(e.venue + ", " + e.city)}&output=embed`} className="h-40 w-full" loading="lazy" /></div></div>
           </Reveal>
-          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold">Glimpses</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={e.image} alt={e.title} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpg" alt="Aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/festival-crowd.jpg" alt="Festival" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
+          <Reveal className="mt-8"><h2 className="font-display text-2xl font-semibold">Glimpses</h2><div className="mt-4 grid grid-cols-3 gap-2.5"><img src={e.image} alt={e.title} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/aarti-night.jpeg" alt="Aarti" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/festival-crowd.jpeg" alt="Festival" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div></Reveal>
         </div>
         <aside id="register" className="mt-10 scroll-mt-28 lg:mt-0"><div className="lg:sticky lg:top-28"><EnquiryForm context={`Event registration: ${e.title} (${formatDate(e.date)})`} title="Register for Event" /></div></aside>
       </div>

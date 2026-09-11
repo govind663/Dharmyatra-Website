@@ -22,7 +22,7 @@ export function PanchangPage() {
   const p = useMemo(() => { const d = new Date(); d.setDate(d.getDate() + offset); return computePanchang(d); }, [offset]);
   return (
     <>
-      <PageHero eyebrow="Panchang · Daily Almanac" title="Today's Panchang" sub="Tithi, Nakshatra, Yoga, Karana, Rahukaal and shubh muhurat — computed fresh for Varanasi, guidance-grade." image="/images/aarti-night.jpg">
+      <PageHero eyebrow="Panchang · Daily Almanac" title="Today's Panchang" sub="Tithi, Nakshatra, Yoga, Karana, Rahukaal and shubh muhurat — computed fresh for Varanasi, guidance-grade." image="/images/aarti-night.jpeg">
         <div className="flex items-center gap-2 rounded-2xl bg-white/10 p-1.5 backdrop-blur">
           <button onClick={() => setOffset(offset - 1)} aria-label="Previous day" className="grid h-9 w-9 place-items-center rounded-xl hover:bg-white/15"><ChevronLeft size={17} /></button>
           <span className="min-w-[220px] text-center text-sm font-bold">{p.displayDate}</span>
@@ -63,7 +63,7 @@ export function CalendarPage() {
   const step = (d: number) => { const dt = new Date(ym.y, ym.m + d, 1); setYm({ y: dt.getFullYear(), m: dt.getMonth() }); };
   return (
     <>
-      <PageHero eyebrow="Calendar · Utsav" title="Festival Calendar" sub="Tithi-marked months — Ekadashi, Purnima, Amavasya and the great festivals at a glance." image="/images/festival-crowd.jpg" />
+      <PageHero eyebrow="Calendar · Utsav" title="Festival Calendar" sub="Tithi-marked months — Ekadashi, Purnima, Amavasya and the great festivals at a glance." image="/images/festival-crowd.jpeg" />
       <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Panchang", href: "/panchang" }, { label: "Calendar" }]} />
         <div className="mt-6 flex items-center justify-between rounded-3xl border border-orange-900/10 bg-white p-4">

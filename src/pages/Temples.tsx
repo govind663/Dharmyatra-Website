@@ -8,7 +8,7 @@ import { TempleCard } from "../components/cards";
 import { PageHero } from "../components/blocks";
 
 export default function Temples() {
-  useSEO({ title: "Temples of India — Darshan Timings, Aarti & History | DivyaDhara", description: "Explore Jyotirlingas, Char Dham seats & heritage temples: darshan timings, aartis, festivals, history and how to reach — with Sugam darshan assistance.", path: "/temples", image: "/images/hero-varanasi.jpg" });
+  useSEO({ title: "Temples of India — Darshan Timings, Aarti & History | DivyaDhara", description: "Explore Jyotirlingas, Char Dham seats & heritage temples: darshan timings, aartis, festivals, history and how to reach — with Sugam darshan assistance.", path: "/temples", image: "/images/hero-varanasi.jpeg" });
   const [q, setQ] = useState("");
   const [state, setState] = useState("");
   const [cat, setCat] = useState("");
@@ -19,7 +19,7 @@ export default function Temples() {
   const sel = "rounded-xl border border-orange-900/15 bg-white px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500";
   return (
     <>
-      <PageHero eyebrow="Sacred Kshetras · Mandir" title="Temples of Bharat" sub="Jyotirlingas, Char Dham dhams and living heritage — darshan timings, aartis, festivals and pilgrim guidance." image="/images/hero-varanasi.jpg">
+      <PageHero eyebrow="Sacred Kshetras · Mandir" title="Temples of Bharat" sub="Jyotirlingas, Char Dham dhams and living heritage — darshan timings, aartis, festivals and pilgrim guidance." image="/images/hero-varanasi.jpeg">
         <span className="rounded-full bg-white/15 px-4 py-2 text-xs font-bold backdrop-blur">{TEMPLES.length} featured kshetras · 1200+ documented</span>
       </PageHero>
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">

@@ -11,9 +11,9 @@ import { TempleCard, ServiceCard, PanditCard, PackageCard, EventCard, CourseCard
 import { WhatsAppBand } from "../components/blocks";
 
 const SLIDES = [
-  { img: "/images/hero-varanasi.jpg", kicker: "Kashi · The Eternal City", title: "Where the Ganga Meets Eternity", sub: "Sugam darshan, Ganga aarti boats & verified pandits across 40+ sacred kshetras.", cta1: { l: "Explore Temples", h: "/temples" }, cta2: { l: "Today's Panchang", h: "/panchang" }, sanskrit: "॥ काश्यां मरणान्मुक्तिः ॥" },
-  { img: "/images/hero-kedarnath.jpg", kicker: "Char Dham Yatra 2027", title: "Walk Where the Gods Reside", sub: "Heli & road yatras to Kedarnath, Badrinath, Kashi and the Tamil temple circuit.", cta1: { l: "View Yatra Packages", h: "/packages" }, cta2: { l: "Spiritual Places", h: "/spiritual-places" }, sanskrit: "॥ अतिथि देवो भव ॥" },
-  { img: "/images/aarti-night.jpg", kicker: "Maha Shivratri · Dev Deepawali", title: "Aarti, Katha & Sacred Festivals", sub: "Live aartis, Bhagavat kathas and festival sevas — join in person or from home.", cta1: { l: "Upcoming Events", h: "/events" }, cta2: { l: "Book a Puja", h: "/services" }, sanskrit: "॥ तमसो मा ज्योतिर्गमय ॥" },
+  { img: "/images/hero-varanasi.jpeg", kicker: "Kashi · The Eternal City", title: "Where the Ganga Meets Eternity", sub: "Sugam darshan, Ganga aarti boats & verified pandits across 40+ sacred kshetras.", cta1: { l: "Explore Temples", h: "/temples" }, cta2: { l: "Today's Panchang", h: "/panchang" }, sanskrit: "॥ काश्यां मरणान्मुक्तिः ॥" },
+  { img: "/images/hero-kedarnath.jpeg", kicker: "Char Dham Yatra 2027", title: "Walk Where the Gods Reside", sub: "Heli & road yatras to Kedarnath, Badrinath, Kashi and the Tamil temple circuit.", cta1: { l: "View Yatra Packages", h: "/packages" }, cta2: { l: "Spiritual Places", h: "/spiritual-places" }, sanskrit: "॥ अतिथि देवो भव ॥" },
+  { img: "/images/aarti-night.jpeg", kicker: "Maha Shivratri · Dev Deepawali", title: "Aarti, Katha & Sacred Festivals", sub: "Live aartis, Bhagavat kathas and festival sevas — join in person or from home.", cta1: { l: "Upcoming Events", h: "/events" }, cta2: { l: "Book a Puja", h: "/services" }, sanskrit: "॥ तमसो मा ज्योतिर्गमय ॥" },
 ];
 
 function Hero() {
@@ -134,7 +134,7 @@ export default function Home() {
 
       {/* 4 · live aarti */}
       <section className="relative overflow-hidden bg-[#1c1410] py-16 text-white md:py-20" aria-label="Live aarti">
-        <img src="/images/aarti-night.jpg" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-25" />
+        <img src="/images/aarti-night.jpeg" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1c1410] via-[#1c1410]/85 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.2fr]">

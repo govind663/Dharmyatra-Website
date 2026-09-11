@@ -17,7 +17,7 @@ export default function Pandits() {
   const sel = "rounded-xl border border-orange-900/15 bg-white px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500";
   return (
     <>
-      <PageHero eyebrow="Acharyas · Verified" title="Pandits You Can Trust" sub="Parampara-trained and identity-verified. Personal contact shared only after confirmed booking — your privacy and theirs, protected." image="/images/pandit-portrait.jpg" />
+      <PageHero eyebrow="Acharyas · Verified" title="Pandits You Can Trust" sub="Parampara-trained and identity-verified. Personal contact shared only after confirmed booking — your privacy and theirs, protected." image="/images/pandit-portrait.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Pandits" }]} />
         <div className="mt-6 grid gap-3 md:grid-cols-[1.4fr_1fr_1fr]">

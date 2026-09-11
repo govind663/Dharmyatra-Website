@@ -111,7 +111,7 @@ export default function TempleDetail() {
           <Reveal className="mt-10">
             <h2 className="font-display flex items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><Camera size={22} className="text-orange-600" /> Gallery Glimpses</h2>
             <div className="mt-4 grid grid-cols-3 gap-2.5">
-              {[t.image, "/images/aarti-night.jpg", "/images/puja-thali.jpg"].map((src, i) => <img key={i} src={src} alt={`${t.name} glimpse ${i + 1}`} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" />)}
+              {[t.image, "/images/aarti-night.jpeg", "/images/puja-thali.jpeg"].map((src, i) => <img key={i} src={src} alt={`${t.name} glimpse ${i + 1}`} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" />)}
             </div>
             <Link to="/gallery" className="mt-3 inline-block text-sm font-bold text-orange-700 underline underline-offset-4">Open full gallery →</Link>
           </Reveal>

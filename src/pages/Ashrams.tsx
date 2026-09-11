@@ -11,7 +11,7 @@ function AshramList() {
   useSEO({ title: "Ashrams of India — Stay, Satsang & Seva | DivyaDhara", description: "Rishikesh, Tiruvannamalai, Bengaluru & Puducherry ashrams: daily schedule, stay, sattvic food, courses and seva opportunities.", path: "/ashrams" });
   return (
     <>
-      <PageHero eyebrow="Tapobhumi · Ashram" title="Ashrams & Spiritual Homes" sub="Stay, practise and serve — daily schedules, sattvic food and course calendars from India's beloved ashrams." image="/images/ashram-dawn.jpg" />
+      <PageHero eyebrow="Tapobhumi · Ashram" title="Ashrams & Spiritual Homes" sub="Stay, practise and serve — daily schedules, sattvic food and course calendars from India's beloved ashrams." image="/images/ashram-dawn.jpeg" />
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-10 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Ashrams" }]} />
         {ASHRAMS.map((a, i) => <AshramCard key={a.slug} a={a} i={i} />)}
@@ -61,7 +61,7 @@ export function AshramDetail() {
           </Reveal>
           <Reveal className="mt-8">
             <h2 className="font-display flex items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><Camera size={22} className="text-orange-600" /> Glimpses</h2>
-            <div className="mt-4 grid grid-cols-3 gap-2.5"><img src={a.image} alt={a.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/yoga-course.jpg" alt="Yoga at the ashram" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/puja-thali.jpg" alt="Ashram rituals" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div>
+            <div className="mt-4 grid grid-cols-3 gap-2.5"><img src={a.image} alt={a.name} loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/yoga-course.jpeg" alt="Yoga at the ashram" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /><img src="/images/puja-thali.jpeg" alt="Ashram rituals" loading="lazy" className="h-32 rounded-2xl object-cover md:h-44" /></div>
           </Reveal>
         </div>
         <aside id="visit" className="mt-10 scroll-mt-28 lg:mt-0"><div className="lg:sticky lg:top-28"><EnquiryForm context={`Ashram stay: ${a.name}, ${a.place}`} title="Plan My Ashram Stay" /></div></aside>

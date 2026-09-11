@@ -16,7 +16,7 @@ export default function Services() {
   const list = SERVICES.filter((s) => (!cat || s.category === cat) && (!q || s.name.toLowerCase().includes(q.toLowerCase())));
   return (
     <>
-      <PageHero eyebrow="Sevas · Home & Kshetra" title="Puja Services" sub="Shastra-true vidhi with verified pandits, transparent pricing and muhurat guidance — at your home or the sacred kshetra." image="/images/puja-thali.jpg" />
+      <PageHero eyebrow="Sevas · Home & Kshetra" title="Puja Services" sub="Shastra-true vidhi with verified pandits, transparent pricing and muhurat guidance — at your home or the sacred kshetra." image="/images/puja-thali.jpeg" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Puja Services" }]} />
         <div className="mt-6 flex flex-col gap-3 md:flex-row">
