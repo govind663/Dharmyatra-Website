@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Component,
   useMemo,
@@ -15,6 +17,7 @@ import {
   ChevronRight,
   Clock,
   GraduationCap,
+  Gem,
   Heart,
   Home,
   Info,
@@ -72,6 +75,10 @@ import {
   PageHero,
   WhatsAppBand,
 } from "../components/blocks";
+
+import {
+  PremiumKundliReport,
+} from "../components/kundli/KundliCharts";
 
 /* =========================================================
    TYPES
@@ -300,7 +307,7 @@ function Card({
       <div
         className={`h-full rounded-3xl p-6 ${
           dark
-            ? "bg-[#1c1410] text-white"
+            ? "bg-char-900 text-white"
             : "border border-orange-900/10 bg-white sacred-border"
         }`}
       >
@@ -396,7 +403,7 @@ function LocationSelector({
 
           onChange(selected);
         }}
-        className="max-w-[190px] bg-transparent text-sm font-bold outline-none"
+        className="max-w-47.5 bg-transparent text-sm font-bold outline-none"
         aria-label="Select city"
       >
         {locations.map(
@@ -513,6 +520,94 @@ function getPersistedLocationId(): string | null {
   } catch {
     return null;
   }
+}
+
+/* =========================================================
+   SAFE PANCHANG FORMATTERS
+========================================================= */
+
+type PanchangDateValue = Date | string | null | undefined;
+
+type PanchangIntervalValue = {
+  start?: PanchangDateValue;
+  end?: PanchangDateValue;
+} | null | undefined;
+
+function toValidDate(value: PanchangDateValue): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTime(value: PanchangDateValue, timeZone: string): string {
+  const date = toValidDate(value);
+  if (!date) return "--";
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone,
+  }).format(date);
+}
+
+function formatDateLabel(value: PanchangDateValue, timeZone: string): string {
+  const date = toValidDate(value);
+  if (!date) return "--";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone,
+  }).format(date);
+}
+
+function formatWeekday(value: PanchangDateValue, timeZone: string): string {
+  const date = toValidDate(value);
+  if (!date) return "--";
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "long",
+    timeZone,
+  }).format(date);
+}
+
+function formatInterval(value: PanchangIntervalValue, timeZone: string): string {
+  if (!value?.start || !value?.end) return "--";
+  return `${formatTime(value.start, timeZone)} – ${formatTime(value.end, timeZone)}`;
+}
+
+function getVaraLord(value: PanchangDateValue, timeZone: string): string {
+  const date = toValidDate(value);
+  if (!date) return "--";
+  const weekday = new Intl.DateTimeFormat("en-IN", {
+    weekday: "long",
+    timeZone,
+  }).format(date).toLowerCase();
+  const map: Record<string, string> = {
+    sunday: "Surya",
+    monday: "Chandra",
+    tuesday: "Mangala",
+    wednesday: "Budha",
+    thursday: "Guru",
+    friday: "Shukra",
+    saturday: "Shani",
+  };
+  return map[weekday] ?? "--";
+}
+
+function getDayChoghadiyaItems(panchang: ReturnType<typeof computePanchang>) {
+  return (panchang.choghadiya ?? []).filter((item) => item.isDay);
+}
+
+function getAuspiciousChoghadiya(panchang: ReturnType<typeof computePanchang>) {
+  return getDayChoghadiyaItems(panchang).filter(
+    (item) => item.quality === "auspicious",
+  );
+}
+
+function getInauspiciousChoghadiya(panchang: ReturnType<typeof computePanchang>) {
+  return getDayChoghadiyaItems(panchang).filter(
+    (item) => item.quality === "inauspicious",
+  );
 }
 
 /* =========================================================
@@ -992,8 +1087,8 @@ function PanchangView({
               />
             </button>
 
-            <span className="min-w-[220px] text-center text-sm font-bold">
-              {p.displayDate}
+            <span className="min-w-55 text-center text-sm font-bold">
+              {formatDateLabel(p.date, p.location.timezone)}
             </span>
 
             <button
@@ -1084,10 +1179,11 @@ function PanchangView({
             {p.festivals.map(
               (festival) => (
                 <span
-                  key={festival}
-                  className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[13px] font-bold text-white shadow"
+                  key={festival.id}
+                  className="rounded-full bg-linear-to-r from-orange-600 to-amber-500 px-4 py-2 text-[13px] font-bold text-white shadow"
+                  title={festival.description ?? festival.nameHindi}
                 >
-                  {festival}
+                  {festival.name}
                 </span>
               ),
             )}
@@ -1104,12 +1200,12 @@ function PanchangView({
             }
           >
             <p className="font-display text-2xl font-semibold text-[#2a1a10]">
-              {p.vara}
+              {formatWeekday(p.date, p.location.timezone)}
             </p>
 
             <p className="text-sm text-stone-500">
               Lord:{" "}
-              {p.varaLord}
+              {getVaraLord(p.date, p.location.timezone)}
             </p>
           </Card>
 
@@ -1129,12 +1225,12 @@ function PanchangView({
             <p className="text-sm text-stone-300">
               {p.tithi.paksha}{" "}
               · ends ~{" "}
-              {p.tithi.ends}
+              {formatTime(p.tithi.end, p.location.timezone)}
             </p>
 
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
+                className="h-full rounded-full bg-linear-to-r from-orange-500 to-amber-400"
                 style={{
                   width: `${Math.min(
                     100,
@@ -1196,12 +1292,12 @@ function PanchangView({
 
             <p className="mt-1 text-xs text-stone-400">
               Yoga ends ~{" "}
-              {p.yoga.ends}
+              {formatTime(p.yoga.end, p.location.timezone)}
             </p>
 
             <p className="text-xs text-stone-400">
               Karana ends ~{" "}
-              {p.karana.ends}
+              {formatTime(p.karana.end, p.location.timezone)}
             </p>
           </Card>
 
@@ -1213,22 +1309,22 @@ function PanchangView({
           >
             <p className="text-[15px] font-bold text-[#2a1a10]">
               Sunrise{" "}
-              {p.sunrise}
+              {formatTime(p.solar.sunrise, p.location.timezone)}
             </p>
 
             <p className="text-[15px] font-bold text-[#2a1a10]">
               Sunset{" "}
-              {p.sunset}
+              {formatTime(p.solar.sunset, p.location.timezone)}
             </p>
 
             <p className="mt-1 text-sm text-stone-500">
               Moonrise ~{" "}
-              {p.moonrise}
+              {formatTime(p.lunar.moonrise, p.location.timezone)}
             </p>
 
             <p className="text-sm text-stone-500">
               Moonset ~{" "}
-              {p.moonset}
+              {formatTime(p.lunar.moonset, p.location.timezone)}
             </p>
           </Card>
 
@@ -1242,9 +1338,7 @@ function PanchangView({
             dark
           >
             <p className="font-display text-2xl font-semibold text-emerald-300">
-              {p.abhijit.start}{" "}
-              –{" "}
-              {p.abhijit.end}
+              {formatInterval(p.abhijit, p.location.timezone)}
             </p>
 
             <p className="text-sm text-stone-300">
@@ -1262,23 +1356,17 @@ function PanchangView({
             }
           >
             <p className="font-display text-2xl font-semibold text-red-800">
-              {p.rahukaal.start}{" "}
-              –{" "}
-              {p.rahukaal.end}
+              {formatInterval(p.rahukaal, p.location.timezone)}
             </p>
 
             <p className="mt-2 text-sm text-stone-500">
               Yamaganda{" "}
-              {p.yamaganda.start}{" "}
-              –{" "}
-              {p.yamaganda.end}
+              {formatInterval(p.yamaganda, p.location.timezone)}
             </p>
 
             <p className="text-sm text-stone-500">
               Gulika{" "}
-              {p.gulika.start}{" "}
-              –{" "}
-              {p.gulika.end}
+              {formatInterval(p.gulika, p.location.timezone)}
             </p>
           </Card>
 
@@ -1289,7 +1377,7 @@ function PanchangView({
             }
           >
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-              {p.choghadiya.day.map(
+              {getDayChoghadiyaItems(p).map(
                 (
                   item,
                   index,
@@ -1297,16 +1385,11 @@ function PanchangView({
                   <div
                     key={`${item.name}-${index}`}
                     className={`rounded-xl px-2 py-2 ${
-                      item.nature ===
-                        "Shubh" ||
-                      item.nature ===
-                        "Labh" ||
-                      item.nature ===
-                        "Amrit" ||
-                      item.nature ===
-                        "Chal"
+                      item.quality === "auspicious"
                         ? "bg-emerald-50 text-emerald-900"
-                        : "bg-red-50 text-red-900"
+                        : item.quality === "inauspicious"
+                          ? "bg-red-50 text-red-900"
+                          : "bg-orange-50 text-orange-900"
                     }`}
                   >
                     <p className="text-[11px] font-bold">
@@ -1314,11 +1397,11 @@ function PanchangView({
                     </p>
 
                     <p className="text-[10px] opacity-70">
-                      {item.start}
+                      {formatTime(item.start, p.location.timezone)}
                     </p>
 
                     <p className="text-[10px] opacity-60">
-                      {item.end}
+                      {formatTime(item.end, p.location.timezone)}
                     </p>
                   </div>
                 ),
@@ -1326,10 +1409,7 @@ function PanchangView({
             </div>
 
             <p className="mt-2 text-xs text-stone-500">
-              {
-                p.choghadiya
-                  .note
-              }
+              Day Choghadiya from sunrise · Labh, Amrit, Shubh and Char are considered shubh.
             </p>
           </Card>
 
@@ -1345,16 +1425,16 @@ function PanchangView({
               </p>
 
               <div className="mt-2 space-y-1.5">
-                {p.shubh.map(
+                {getAuspiciousChoghadiya(p).map(
                   (
                     item,
                     index,
                   ) => (
                     <p
-                      key={`${item}-${index}`}
+                      key={`${item.index}-${index}`}
                       className="text-xs leading-relaxed text-emerald-700"
                     >
-                      {item}
+                      {item.name} · {formatTime(item.start, p.location.timezone)} – {formatTime(item.end, p.location.timezone)}
                     </p>
                   ),
                 )}
@@ -1367,16 +1447,16 @@ function PanchangView({
               </p>
 
               <div className="mt-2 space-y-1.5">
-                {p.avoid.map(
+                {getInauspiciousChoghadiya(p).map(
                   (
                     item,
                     index,
                   ) => (
                     <p
-                      key={`${item}-${index}`}
+                      key={`${item.index}-${index}`}
                       className="text-xs leading-relaxed text-red-700"
                     >
-                      {item}
+                      {item.name} · {formatTime(item.start, p.location.timezone)} – {formatTime(item.end, p.location.timezone)}
                     </p>
                   ),
                 )}
@@ -1976,7 +2056,7 @@ function CalendarView({
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <div className="min-w-[760px]">
+          <div className="min-w-190">
             <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-bold uppercase tracking-wider text-stone-400 md:gap-2">
               {calendar.weekdays.map(
                 (weekday) => (
@@ -2006,7 +2086,7 @@ function CalendarView({
                     <Link
                       key={`${day.dateISO}-${day.isCurrentMonth}`}
                       to={`/panchang?date=${day.dateISO}`}
-                      className={`min-h-[105px] rounded-2xl border p-1.5 text-left transition md:min-h-[140px] md:p-2 ${
+                      className={`min-h-26.25 rounded-2xl border p-1.5 text-left transition md:min-h-35 md:p-2 ${
                         !day.isCurrentMonth
                           ? "opacity-40"
                           : "hover:-translate-y-0.5 hover:shadow-md"
@@ -2347,7 +2427,7 @@ function RashifalView({
           )}
         </div>
 
-        <div className="mt-8 rounded-3xl bg-[#1c1410] p-6 text-white">
+        <div className="mt-8 rounded-3xl bg-char-900 p-6 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">
             Selected Rashi
           </p>
@@ -2632,6 +2712,52 @@ function RashifalView({
 }
 
 /* =========================================================
+   KUNDLI DATE HELPERS
+========================================================= */
+
+type KundliDateValue = Date | string | number | null | undefined;
+
+function formatKundliDate(
+  value: KundliDateValue,
+): string {
+  if (value === null || value === undefined || value === "") {
+    return "--";
+  }
+
+  const date = value instanceof Date
+    ? value
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "--";
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatKundliDateKey(
+  value: KundliDateValue,
+): string {
+  if (value === null || value === undefined || value === "") {
+    return String(Date.now());
+  }
+
+  const date = value instanceof Date
+    ? value
+    : new Date(value);
+
+  const timestamp = date.getTime();
+
+  return Number.isNaN(timestamp)
+    ? String(value)
+    : String(timestamp);
+}
+
+/* =========================================================
    KUNDLI VIEW
 ========================================================= */
 
@@ -2642,200 +2768,108 @@ function KundliView({
 }) {
   useSEO({
     title:
-      "Basic Kundli — Birth Chart & Vedic Astrology | DharmYatra",
+      "Premium Kundli — Lagna, D9 Navamsa & Vedic Birth Chart | DharmYatra",
 
     description:
-      "Basic Kundli interface for birth date, time and place with location-aware sidereal calculations.",
+      "Generate a premium Vedic Kundli with D1 Lagna chart, D9 Navamsa chart, planetary positions, 12 houses, Mahadasha and Manglik screening.",
 
     path: "/kundli",
   });
 
-  const locations =
-    useMemo(
-      () => getSafeLocations(),
-      [],
-    );
-
-  const defaultBirthLocation =
-    useMemo(
-      () => {
-        if (
-          location?.id
-        ) {
-          const found =
-            locations.find(
-              (item) =>
-                item.id ===
-                location.id,
-            );
-
-          if (found) {
-            return found;
-          }
-        }
-
-        return (
-          locations[0] ??
-          DEFAULT_LOCATION
-        );
-      },
-      [
-        location,
-        locations,
-      ],
-    );
-
-  const [
-    birthDate,
-    setBirthDate,
-  ] = useState("");
-
-  const [
-    birthTime,
-    setBirthTime,
-  ] = useState("");
-
-  const [
-    birthPlace,
-    setBirthPlace,
-  ] = useState(
-    defaultBirthLocation.id ??
-      "",
+  const locations = useMemo(
+    () => getSafeLocations(),
+    [],
   );
 
-  const [
-    submitted,
-    setSubmitted,
-  ] = useState(false);
+  const defaultBirthLocation = useMemo(() => {
+    if (location?.id) {
+      const found = locations.find(
+        (item) => item.id === location.id,
+      );
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+      if (found) return found;
+    }
 
-  const [
-    chartData,
-    setChartData,
-  ] =
-    useState<KundliChartData | null>(
-      null,
-    );
+    return locations[0] ?? DEFAULT_LOCATION;
+  }, [location, locations]);
 
-  const birthLocation =
-    getSafeLocation(
-      birthPlace,
-    );
+  const [birthName, setBirthName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [birthPlace, setBirthPlace] = useState(
+    defaultBirthLocation.id ?? "",
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [chartData, setChartData] = useState<KundliChartData | null>(null);
 
-  const submit = (
-    event: FormEvent,
-  ) => {
+  const birthLocation = getSafeLocation(birthPlace);
+
+  const submit = (event: FormEvent) => {
     event.preventDefault();
-
     setError("");
     setSubmitted(false);
     setChartData(null);
 
+    const safeName = birthName.trim() || "Guest";
+
     const details = {
-      name: "Guest",
+      name: safeName,
       date: birthDate,
       time: birthTime,
-      location:
-        birthLocation,
+      location: birthLocation,
     };
 
     try {
-      const validationErrors =
-        validateBirthDetails(
-          details,
-        );
+      const validationErrors = validateBirthDetails(details);
 
-      if (
-        validationErrors.length >
-        0
-      ) {
-        setError(
-          validationErrors.join(
-            " ",
-          ),
-        );
-
+      if (validationErrors.length > 0) {
+        setError(validationErrors.join(" "));
         return;
       }
     } catch (caughtError) {
       setError(
-        caughtError instanceof
-          Error
+        caughtError instanceof Error
           ? caughtError.message
           : "Birth details validation failed.",
       );
-
       return;
     }
 
     try {
-      const result =
-        buildKundli({
-          name: "Guest",
-          birthDate,
-          birthTime,
-          location:
-            birthLocation,
-        });
+      const result = buildKundli({
+        name: safeName,
+        birthDate,
+        birthTime,
+        location: birthLocation,
+      });
 
       if (!result) {
-        throw new Error(
-          "Kundli engine returned empty data.",
-        );
+        throw new Error("Kundli engine returned empty data.");
       }
 
-      setChartData(
-        result,
-      );
-
-      setSubmitted(
-        true,
-      );
-    } catch (
-      caughtError
-    ) {
-      console.error(
-        "buildKundli failed:",
-        caughtError,
-      );
-
+      setChartData(result);
+      setSubmitted(true);
+    } catch (caughtError) {
+      console.error("buildKundli failed:", caughtError);
       setError(
-        caughtError instanceof
-          Error
+        caughtError instanceof Error
           ? caughtError.message
           : "Unable to generate Kundli.",
       );
     }
   };
 
-  const lagna =
-    chartData?.chart
-      ?.ascendant;
-
-  const moon =
-    chartData?.chart
-      ?.planets?.Moon;
-
-  const sun =
-    chartData?.chart
-      ?.planets?.Sun;
-
   return (
     <>
       <PageHero
         eyebrow="Kundli · Janma Chart"
-        title="Basic Kundli"
-        sub="Enter birth details to prepare a location-aware basic Vedic astrology profile."
+        title="Premium Janma Kundli"
+        sub="Create a detailed location-aware Vedic birth report with a Pandit-style Lagna chart and D9 Navamsa chart."
         image="/images/aarti-night.jpeg"
       />
 
-      <PanchangTabs
-        active="kundli"
-      />
+      <PanchangTabs active="kundli" />
 
       <PersonalizationTrustBar
         location={location}
@@ -2845,370 +2879,192 @@ function KundliView({
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 lg:px-8">
         <Breadcrumbs
           items={[
-            {
-              label: "Home",
-              href: "/",
-            },
-            {
-              label: "Kundli",
-            },
+            { label: "Home", href: "/" },
+            { label: "Kundli" },
           ]}
         />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <Reveal className="rounded-3xl border border-orange-900/10 bg-white p-6">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
+          <Reveal className="rounded-4xl border border-orange-900/10 bg-white p-6 shadow-sm lg:sticky lg:top-24 lg:self-start">
             <div className="flex items-center gap-3">
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-100 text-orange-700">
-                <UserRound
-                  size={21}
+                <UserRound size={21} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-700">
+                  Vedic Birth Report
+                </p>
+                <h2 className="font-display text-2xl font-semibold text-[#2a1a10]">
+                  Birth Details
+                </h2>
+              </div>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-stone-500">
+              Exact birth date, time and place are required for a meaningful Lagna and divisional-chart calculation.
+            </p>
+
+            <form onSubmit={submit} className="mt-6 space-y-5">
+              <div>
+                <label htmlFor="birth-name" className="mb-2 block text-sm font-bold text-stone-700">
+                  Full Name
+                </label>
+                <input
+                  id="birth-name"
+                  type="text"
+                  value={birthName}
+                  onChange={(event) => setBirthName(event.target.value)}
+                  placeholder="Enter full name"
+                  autoComplete="name"
+                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
 
               <div>
-                <h2 className="font-display text-2xl font-semibold text-[#2a1a10]">
-                  Birth Details
-                </h2>
-
-                <p className="text-sm text-stone-500">
-                  Exact birth date,
-                  time and place
-                  are required for
-                  the basic chart.
-                </p>
-              </div>
-            </div>
-
-            <form
-              onSubmit={submit}
-              className="mt-6 space-y-5"
-            >
-              <div>
-                <label
-                  htmlFor="birth-date"
-                  className="mb-2 block text-sm font-bold text-stone-700"
-                >
+                <label htmlFor="birth-date" className="mb-2 block text-sm font-bold text-stone-700">
                   Birth Date
                 </label>
-
                 <input
                   id="birth-date"
                   type="date"
                   value={birthDate}
-                  onChange={(
-                    event,
-                  ) =>
-                    setBirthDate(
-                      event.target
-                        .value,
-                    )
-                  }
+                  onChange={(event) => setBirthDate(event.target.value)}
                   required
-                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none focus:border-orange-500"
+                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
 
               <div>
-                <label
-                  htmlFor="birth-time"
-                  className="mb-2 block text-sm font-bold text-stone-700"
-                >
+                <label htmlFor="birth-time" className="mb-2 block text-sm font-bold text-stone-700">
                   Birth Time
                 </label>
-
                 <input
                   id="birth-time"
                   type="time"
                   value={birthTime}
-                  onChange={(
-                    event,
-                  ) =>
-                    setBirthTime(
-                      event.target
-                        .value,
-                    )
-                  }
+                  onChange={(event) => setBirthTime(event.target.value)}
                   required
-                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none focus:border-orange-500"
+                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
 
               <div>
-                <label
-                  htmlFor="birth-place"
-                  className="mb-2 block text-sm font-bold text-stone-700"
-                >
+                <label htmlFor="birth-place" className="mb-2 block text-sm font-bold text-stone-700">
                   Birth Place
                 </label>
-
                 <select
                   id="birth-place"
-                  value={
-                    birthPlace
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    setBirthPlace(
-                      event.target
-                        .value,
-                    )
-                  }
-                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none focus:border-orange-500"
+                  value={birthPlace}
+                  onChange={(event) => setBirthPlace(event.target.value)}
+                  className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 >
-                  {locations.map(
-                    (item) => (
-                      <option
-                        key={
-                          item.id
-                        }
-                        value={
-                          item.id
-                        }
-                      >
-                        {
-                          item.name
-                        }{" "}
-                        —{" "}
-                        {
-                          item.region
-                        }
-                      </option>
-                    ),
-                  )}
+                  {locations.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} — {item.region}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="rounded-2xl bg-orange-50 p-4 text-xs leading-relaxed text-stone-600">
                 <div className="flex items-start gap-2">
-                  <MapPin
-                    size={15}
-                    className="mt-0.5 shrink-0 text-orange-600"
-                  />
-
+                  <MapPin size={15} className="mt-0.5 shrink-0 text-orange-600" />
                   <span>
-                    {
-                      birthLocation.name
-                    }
-                    , India ·{" "}
-                    {Number(
-                      birthLocation.latitude,
-                    ).toFixed(4)}
-                    °N ·{" "}
-                    {Number(
-                      birthLocation.longitude,
-                    ).toFixed(4)}
-                    °E
+                    {birthLocation.name}, India · {Number(birthLocation.latitude).toFixed(4)}°N · {Number(birthLocation.longitude).toFixed(4)}°E
                   </span>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-900/10 bg-emerald-50/70 p-4 text-xs leading-6 text-emerald-900">
+                <div className="flex items-center gap-2 font-black">
+                  <ShieldCheck size={15} />
+                  Calculation basis is visible
+                </div>
+                <p className="mt-1 text-emerald-800/80">
+                  Lahiri sidereal zodiac · mean nodes · whole-sign houses · astronomical calculation.
+                </p>
               </div>
 
               {error && (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle
-                      size={17}
-                      className="mt-0.5 shrink-0"
-                    />
-
-                    <span>
-                      {error}
-                    </span>
+                    <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+                    <span>{error}</span>
                   </div>
                 </div>
               )}
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-orange-600 px-5 py-3.5 text-sm font-bold text-white shadow transition hover:bg-orange-700"
+                className="w-full rounded-2xl bg-linear-to-r from-orange-600 to-amber-500 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-orange-900/10 transition hover:-translate-y-0.5 hover:from-orange-700 hover:to-amber-600"
               >
-                Generate Basic Kundli
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles size={16} />
+                  Generate Premium Kundli
+                </span>
               </button>
+
+              {submitted && chartData && (
+                <p className="text-center text-[11px] font-bold text-emerald-700">
+                  Kundli generated successfully. Full preview is ready below.
+                </p>
+              )}
             </form>
           </Reveal>
 
-          <Reveal className="rounded-3xl bg-[#1c1410] p-6 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">
-              Basic Birth Chart
+          <Reveal className="rounded-4xl bg-linear-to-br from-[#2a1a10] via-[#1d1511] to-[#3b2214] p-6 text-white shadow-xl">
+            <div className="flex items-center gap-2 text-amber-400">
+              <GemIcon />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                DharmYatra Astrology
+              </span>
+            </div>
+
+            <h2 className="mt-3 font-display text-3xl font-semibold">
+              Pandit-style Kundli Preview
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-stone-300">
+              Generate the complete report to preview D1 Lagna, D9 Navamsa, planetary placements, houses, Mahadasha and key screening details before downloading the PDF.
             </p>
 
-            {!submitted ||
-            !chartData ? (
-              <div className="mt-8">
-                <div className="grid min-h-[320px] place-items-center rounded-3xl border border-white/10 bg-white/5 text-center">
-                  <div className="px-6">
-                    <MoonStar
-                      size={38}
-                      className="mx-auto text-amber-300"
-                    />
+            {!chartData ? (
+              <div className="mt-8 grid min-h-105 place-items-center rounded-3xl border border-white/10 bg-white/5 text-center">
+                <div className="max-w-md px-6">
+                  <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-amber-400/10 ring-1 ring-amber-400/20">
+                    <MoonStar size={38} className="text-amber-300" />
+                  </div>
+                  <p className="mt-5 font-display text-2xl font-semibold">
+                    Your complete Janma Kundli
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-stone-400">
+                    Fill the birth details to generate the main Lagna chart and D9 Navamsa chart with a complete report preview.
+                  </p>
 
-                    <p className="mt-4 font-display text-xl font-semibold">
-                      Your Kundli
-                    </p>
-
-                    <p className="mt-2 max-w-sm text-sm leading-6 text-stone-400">
-                      Enter birth date,
-                      time and place to
-                      generate basic
-                      Lagna, Moon sign,
-                      planets and
-                      Dasha information.
-                    </p>
+                  <div className="mt-6 grid gap-2 sm:grid-cols-3">
+                    {["D1 Lagna", "D9 Navamsa", "PDF Report"].map((item) => (
+                      <div key={item} className="rounded-xl bg-white/5 px-3 py-2 text-[10px] font-black text-amber-200">
+                        {item}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="mt-6 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-white/5 p-5">
-                    <p className="text-xs text-stone-400">
-                      Birth Date
-                    </p>
-
-                    <p className="mt-1 font-bold">
-                      {birthDate}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white/5 p-5">
-                    <p className="text-xs text-stone-400">
-                      Birth Time
-                    </p>
-
-                    <p className="mt-1 font-bold">
-                      {birthTime}
-                    </p>
-                  </div>
+              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-[0.15em] text-amber-300">Lagna</p>
+                  <p className="mt-1 font-display text-xl font-semibold">{chartData.chart.ascendant.sign}</p>
+                  <p className="text-xs text-stone-300">{chartData.chart.ascendant.signEnglish}</p>
                 </div>
-
-                <div className="rounded-2xl bg-white/5 p-5">
-                  <p className="text-xs text-stone-400">
-                    Birth Place
-                  </p>
-
-                  <p className="mt-1 font-bold">
-                    {
-                      birthLocation.name
-                    }
-                  </p>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400">Moon Rashi</p>
+                  <p className="mt-1 font-display text-xl font-semibold">{chartData.chart.moonSign}</p>
+                  <p className="text-xs text-stone-300">{chartData.chart.moonNakshatra}</p>
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-5">
-                    <p className="text-xs text-amber-300">
-                      Lagna
-                    </p>
-
-                    <p className="mt-1 font-display text-2xl font-semibold">
-                      {
-                        lagna?.sign ??
-                        "--"
-                      }
-                    </p>
-
-                    <p className="text-sm text-stone-300">
-                      {
-                        lagna?.signEnglish ??
-                        "--"
-                      }
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-xs text-stone-400">
-                      Moon Sign
-                    </p>
-
-                    <p className="mt-1 font-display text-2xl font-semibold">
-                      {
-                        moon?.sign ??
-                        "--"
-                      }
-                    </p>
-
-                    <p className="text-sm text-stone-300">
-                      {
-                        moon?.signEnglish ??
-                        "--"
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs text-stone-400">
-                        Moon Nakshatra
-                      </p>
-
-                      <p className="mt-1 font-bold">
-                        {
-                          moon?.nakshatra ??
-                          "--"
-                        }
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
-                      Pada{" "}
-                      {
-                        moon?.pada ??
-                        "--"
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs text-stone-400">
-                    Sun Sign
-                  </p>
-
-                  <p className="mt-1 font-bold">
-                    {sun?.sign ??
-                      "--"}{" "}
-                    ·{" "}
-                    {
-                      sun?.signEnglish ??
-                      "--"
-                    }
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs text-stone-400">
-                    Ayanamsha
-                  </p>
-
-                  <p className="mt-1 font-bold">
-                    {Number(
-                      chartData.chart
-                        ?.ayanamsha ??
-                        0,
-                    ).toFixed(4)}
-                    °
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs text-stone-400">
-                    Manglik Screening
-                  </p>
-
-                  <p className="mt-1 font-bold">
-                    {chartData.manglik
-                      ?.isManglik
-                      ? "Possible Manglik indication"
-                      : "No simplified Manglik indication"}
-                  </p>
-
-                  <p className="mt-1 text-xs leading-relaxed text-stone-400">
-                    {
-                      chartData
-                        .manglik
-                        ?.reason
-                    }
-                  </p>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400">Current Dasha</p>
+                  <p className="mt-1 font-display text-xl font-semibold">{chartData.currentMahadasha?.mahadasha?.lord ?? "—"}</p>
+                  <p className="text-xs text-stone-300">Vimshottari</p>
                 </div>
               </div>
             )}
@@ -3216,164 +3072,23 @@ function KundliView({
         </div>
 
         {chartData && (
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <Card
-              title="Planets"
-              icon={
-                <Sparkles
-                  size={14}
-                />
-              }
-            >
-              <div className="space-y-2">
-                {(
-                  chartData.planets ??
-                  []
-                ).map(
-                  (
-                    planet,
-                  ) => (
-                    <div
-                      key={
-                        planet.planet
-                      }
-                      className="flex items-center justify-between gap-3 rounded-xl bg-orange-50 px-3 py-2"
-                    >
-                      <span className="text-xs font-bold text-stone-700">
-                        {
-                          planet.planet
-                        }
-                      </span>
-
-                      <span className="text-xs text-stone-500">
-                        {
-                          planet.sign
-                        }{" "}
-                        · H{" "}
-                        {
-                          planet.house
-                        }
-                      </span>
-                    </div>
-                  ),
-                )}
-              </div>
-            </Card>
-
-            <Card
-              title="Houses"
-              icon={
-                <Home size={14} />
-              }
-            >
-              <div className="space-y-2">
-                {(
-                  chartData.houses ??
-                  []
-                ).map(
-                  (
-                    house,
-                  ) => (
-                    <div
-                      key={
-                        house.house
-                      }
-                      className="rounded-xl bg-orange-50 px-3 py-2"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-bold text-stone-700">
-                          {
-                            house.houseLabel
-                          }
-                        </span>
-
-                        <span className="text-xs text-stone-500">
-                          {
-                            house.sign
-                          }
-                        </span>
-                      </div>
-
-                      {house.occupants
-                        ?.length >
-                        0 && (
-                        <p className="mt-1 text-[11px] text-stone-500">
-                          Planets:{" "}
-                          {house.occupants.join(
-                            ", ",
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  ),
-                )}
-              </div>
-            </Card>
-
-            <Card
-              title="Mahadasha"
-              icon={
-                <Clock size={14} />
-              }
-            >
-              <div className="space-y-2">
-                {(
-                  chartData.mahadashas ??
-                  []
-                )
-                  .slice(0, 5)
-                  .map(
-                    (
-                      period,
-                    ) => (
-                      <div
-                        key={`${period.lord}-${period.start.toISOString()}`}
-                        className="rounded-xl bg-orange-50 px-3 py-2"
-                      >
-                        <p className="text-xs font-bold text-stone-700">
-                          {
-                            period.lord
-                          }
-                        </p>
-
-                        <p className="mt-1 text-[11px] text-stone-500">
-                          {period.start.toLocaleDateString(
-                            "en-IN",
-                          )}{" "}
-                          →{" "}
-                          {period.end.toLocaleDateString(
-                            "en-IN",
-                          )}
-                        </p>
-                      </div>
-                    ),
-                  )}
-              </div>
-            </Card>
-          </div>
+          <PremiumKundliReport chartData={chartData} />
         )}
-
-        <Reveal className="mt-6 rounded-3xl border border-amber-300 bg-amber-50 p-5 text-sm leading-relaxed text-stone-600">
-          <strong className="text-[#3a2415]">
-            Kundli accuracy:
-          </strong>{" "}
-          जन्म समय और स्थान में छोटी त्रुटि भी
-          Lagna, houses और divisional calculations
-          को प्रभावित कर सकती है। Current
-          implementation basic sidereal chart
-          engine पर आधारित है।
-        </Reveal>
 
         <div className="mt-8">
           <WhatsAppBand
             title="Need a detailed Kundli consultation?"
-            sub="Share your birth details for a personalized astrology consultation."
-            message="Namaste! I would like to discuss a detailed Kundli consultation."
+            sub="Share the generated report with a Pandit or request a personalized consultation through WhatsApp."
+            message="Namaste! I have generated my DharmYatra Kundli and would like a detailed consultation."
           />
         </div>
       </div>
     </>
   );
+}
+
+function GemIcon() {
+  return <Gem size={16} />;
 }
 
 /* =========================================================

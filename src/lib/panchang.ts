@@ -89,6 +89,7 @@ export interface PanchangDateRange {
 }
 
 export interface TithiResult {
+  [x: string]: number;
   index: number;
   number: number;
   name: string;
@@ -105,6 +106,7 @@ export interface TithiResult {
 }
 
 export interface NakshatraResult {
+  [x: string]: ReactNode;
   index: number;
   number: number;
   name: string;

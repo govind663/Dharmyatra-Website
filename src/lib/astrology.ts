@@ -143,6 +143,7 @@ export interface PlanetPosition {
 }
 
 export interface AscendantPosition {
+  [x: string]: any;
   longitude: number;
   sign: ZodiacSign;
   signEnglish: ZodiacEnglishSign;
