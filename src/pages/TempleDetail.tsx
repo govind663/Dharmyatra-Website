@@ -20,9 +20,9 @@ export default function TempleDetail() {
   const wa = waLink(`Namaste! I want guidance for darshan at ${t.name}, ${t.city}. Please share Sugam Darshan / aarti / stay help.`);
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img src={t.image} alt={`${t.name}, ${t.city}`} className="kenburns absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/45 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/45 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 md:pt-20 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Temples", href: "/temples" }, { label: t.name }]} />
           <div className="mt-6 flex flex-wrap gap-2">{t.category.map((c) => <span key={c} className="rounded-full bg-amber-400/95 px-3 py-1 text-[11px] font-extrabold text-[#3a2415]">{c}</span>)}<Stars value={t.rating} /></div>
@@ -65,7 +65,7 @@ export default function TempleDetail() {
           {/* aarti + live */}
           <Reveal className="mt-10">
             <h2 id="aarti" className="font-display flex scroll-mt-28 items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><Flame size={22} className="text-orange-600" /> Aarti & Live Darshan</h2>
-            {t.liveAarti && <div className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-red-700 to-orange-700 p-4 text-white"><span className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold"><span className="h-2 w-2 animate-pulse rounded-full bg-white" /> LIVE</span><div><p className="text-sm font-bold">{t.liveAarti.title}</p><p className="text-xs text-orange-100">{t.liveAarti.time}</p></div><Link to="/videos" className="ml-auto shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-red-800">Watch</Link></div>}
+            {t.liveAarti && <div className="mt-4 flex items-center gap-3 rounded-2xl bg-linear-to-r from-red-700 to-orange-700 p-4 text-white"><span className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold"><span className="h-2 w-2 animate-pulse rounded-full bg-white" /> LIVE</span><div><p className="text-sm font-bold">{t.liveAarti.title}</p><p className="text-xs text-orange-100">{t.liveAarti.time}</p></div><Link to="/videos" className="ml-auto shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-red-800">Watch</Link></div>}
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {t.aarti.map((a) => <div key={a.name} className="rounded-2xl border border-orange-900/10 bg-white p-4 sacred-border"><p className="font-display font-semibold text-[#2a1a10]">{a.name}</p><p className="text-xs font-bold text-orange-700">{a.time}</p><p className="mt-1.5 text-[13px] text-stone-600">{a.desc}</p></div>)}
             </div>
@@ -74,7 +74,7 @@ export default function TempleDetail() {
           <Reveal className="mt-10">
             <h2 className="font-display flex items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><CalendarDays size={22} className="text-orange-600" /> Festivals</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {t.festivals.map((f) => <div key={f.name} className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 ring-1 ring-orange-200"><p className="text-[11px] font-bold uppercase tracking-widest text-orange-700">{f.month}</p><p className="font-display font-semibold text-[#2a1a10]">{f.name}</p><p className="mt-1 text-[13px] text-stone-600">{f.desc}</p></div>)}
+              {t.festivals.map((f) => <div key={f.name} className="rounded-2xl bg-linear-to-br from-orange-50 to-amber-50 p-4 ring-1 ring-orange-200"><p className="text-[11px] font-bold uppercase tracking-widest text-orange-700">{f.month}</p><p className="font-display font-semibold text-[#2a1a10]">{f.name}</p><p className="mt-1 text-[13px] text-stone-600">{f.desc}</p></div>)}
             </div>
           </Reveal>
           {/* trust + pandits */}
@@ -84,7 +84,7 @@ export default function TempleDetail() {
               <p className="mt-1 text-sm font-semibold text-orange-800">{t.trust}</p>
               <ul className="mt-3 space-y-2">{t.committee.map((c) => <li key={c.name} className="flex justify-between gap-3 text-sm"><span className="font-semibold text-stone-700">{c.name}</span><span className="text-stone-500">{c.role}</span></li>)}</ul>
             </div>
-            <div className="rounded-3xl bg-[#1c1410] p-6 text-white">
+            <div className="rounded-3xl bg-char-900 p-6 text-white">
               <h3 className="font-display flex items-center gap-2 text-lg font-semibold"><Phone size={18} className="text-amber-400" /> Pandit & Trust Contact</h3>
               <p className="mt-2 text-sm text-stone-300">For abhishek, sankalpa and festival sevas, our kshetra desk connects you to authorised temple pandits.</p>
               <div className="mt-4 flex gap-2">
@@ -129,7 +129,7 @@ export default function TempleDetail() {
         <aside className="mt-10 lg:mt-0">
           <div className="lg:sticky lg:top-28 space-y-4">
             <EnquiryForm context={`Temple enquiry: ${t.name}, ${t.city}`} title="Plan My Darshan" compact />
-            <div className="rounded-3xl bg-[#1c1410] p-6 text-white">
+            <div className="rounded-3xl bg-char-900 p-6 text-white">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-400">Sugam Darshan Desk</p>
               <p className="font-display mt-1 text-xl font-semibold">Senior citizens & families assisted daily.</p>
               <a href={wa} target="_blank" rel="noreferrer" className="btn-saffron mt-4 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white"><MessageCircle size={15} /> WhatsApp Temple Desk</a>

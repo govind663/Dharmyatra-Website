@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -31,7 +32,7 @@ export default function Services() {
         <div className="mt-14"><SectionHead eyebrow="How it works" title="Booking in 3 simple steps" />
           <div className="grid gap-4 md:grid-cols-3">
             {["Tell us your need on WhatsApp or the enquiry form — city, language, date.", "Receive muhurat options, pandit profile & transparent samagri list.", "Welcome the pandit; sankalpa in your gotra-naam; prasad & guidance after."].map((s, i) => (
-              <div key={i} className="rounded-3xl border border-orange-900/10 bg-white p-6 text-center sacred-border"><p className="font-display mx-auto grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-orange-600 to-amber-500 text-xl font-bold text-white">{i + 1}</p><p className="mt-3 text-sm leading-relaxed text-stone-600">{s}</p></div>
+              <div key={i} className="rounded-3xl border border-orange-900/10 bg-white p-6 text-center sacred-border"><p className="font-display mx-auto grid h-12 w-12 place-items-center rounded-full bg-linear-to-br from-orange-600 to-amber-500 text-xl font-bold text-white">{i + 1}</p><p className="mt-3 text-sm leading-relaxed text-stone-600">{s}</p></div>
             ))}
           </div>
           <p className="mt-8 text-center text-sm text-stone-500">Need something custom? <Link to="/contact" className="font-bold text-orange-700 underline">Talk to us</Link> — Kaalsarp, Navagraha, Chandi Path & more.</p>

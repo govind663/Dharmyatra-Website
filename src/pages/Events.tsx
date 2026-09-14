@@ -38,9 +38,9 @@ export function EventDetail() {
   const d = new Date(e.date);
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img src={e.image} alt={e.title} className="kenburns absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/55 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/55 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Events", href: "/events" }, { label: e.title }]} />
           <div className="mt-6 flex flex-wrap items-center gap-3">

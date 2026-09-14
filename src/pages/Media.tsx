@@ -35,13 +35,13 @@ export function Gallery() {
           {list.map((g, i) => (
             <button key={g.src + i} onClick={() => setLight(i)} className="img-zoom group relative block w-full overflow-hidden rounded-2xl text-left" aria-label={`View ${g.title}`}>
               <img src={g.src} alt={g.title} loading="lazy" className="w-full object-cover" />
-              <span className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-80" />
+              <span className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent opacity-80" />
               <span className="absolute bottom-2.5 left-3 right-3"><span className="block text-[13px] font-bold text-white">{g.title}</span><span className="text-[11px] text-amber-300">{g.tag}</span></span>
             </button>
           ))}
         </div>
         {light !== null && list[light] && (
-          <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4" onClick={() => setLight(null)} role="dialog" aria-modal="true" aria-label={list[light].title}>
+          <div className="fixed inset-0 z-70 grid place-items-center bg-black/85 p-4" onClick={() => setLight(null)} role="dialog" aria-modal="true" aria-label={list[light].title}>
             <div className="relative max-w-4xl" onClick={(e) => e.stopPropagation()}>
               <img src={list[light].src} alt={list[light].title} className="max-h-[80vh] rounded-2xl object-contain" />
               <p className="mt-3 text-center text-sm font-bold text-white">{list[light].title} · {list[light].tag}</p>
@@ -79,8 +79,8 @@ export function Videos() {
           ))}
         </div>
         {active !== null && (
-          <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4" onClick={() => setActive(null)} role="dialog" aria-modal="true" aria-label={VIDEO_FAKE[active].title}>
-            <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-[#1c1410]" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-70 grid place-items-center bg-black/85 p-4" onClick={() => setActive(null)} role="dialog" aria-modal="true" aria-label={VIDEO_FAKE[active].title}>
+            <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-char-900" onClick={(e) => e.stopPropagation()}>
               <div className="relative"><img src={VIDEO_FAKE[active].img} alt="" className="h-64 w-full object-cover opacity-70 md:h-96" />
                 <span className="absolute inset-0 grid place-items-center"><span className="grid h-20 w-20 place-items-center rounded-full bg-orange-600 text-white shadow-2xl"><Play size={30} fill="currentColor" /></span></span>
                 <button onClick={() => setActive(null)} aria-label="Close" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white text-black"><X size={18} /></button>

@@ -29,7 +29,7 @@ export function TempleCard({ t, i = 0 }: { t: Temple; i?: number }) {
       <Link to={`/temples/${t.slug}`} className="block">
         <div className="relative h-56 overflow-hidden">
           <img src={t.image} alt={`${t.name}, ${t.city}`} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
           <div className="absolute left-3 top-3 flex gap-2"><Stars value={t.rating} /><span className="rounded-full bg-amber-100/95 px-2.5 py-1 text-[11px] font-bold text-orange-900">{t.category[0]}</span></div>
           <div className="absolute right-3 top-3"><SaveBtn kind="temple" slug={t.slug} /></div>
           <div className="absolute bottom-3 left-4 right-4">
@@ -53,7 +53,7 @@ export function ServiceCard({ s, i = 0 }: { s: Service; i?: number }) {
       <Link to={`/services/${s.slug}`} className="block">
         <div className="relative h-48 overflow-hidden">
           <img src={s.image} alt={s.name} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
           <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-orange-900">{s.category}</span>
           <span className="absolute bottom-3 left-3 rounded-full bg-emerald-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-300">{s.price}</span>
         </div>
@@ -75,7 +75,7 @@ export function PanditCard({ p, i = 0 }: { p: Pandit; i?: number }) {
   return (
     <motion.article {...cardMotion} transition={{ duration: 0.55, delay: (i % 3) * 0.08 }} className="group overflow-hidden rounded-3xl border border-orange-900/10 bg-white sacred-border">
       <Link to={`/pandits/${p.slug}`} className="block">
-        <div className="relative flex items-center gap-4 bg-gradient-to-br from-orange-50 via-amber-50 to-white p-5">
+        <div className="relative flex items-center gap-4 bg-linear-to-br from-orange-50 via-amber-50 to-white p-5">
           <img src={p.photo} alt={`Portrait of ${p.name}`} loading="lazy" className="h-20 w-20 shrink-0 rounded-2xl border-2 border-amber-300 object-cover shadow-md" />
           <div>
             <h3 className="font-display text-lg font-semibold leading-tight text-[#2a1a10]">{p.name}</h3>
@@ -101,7 +101,7 @@ export function PackageCard({ p, i = 0 }: { p: YatraPackage; i?: number }) {
       <Link to={`/packages/${p.slug}`} className="block">
         <div className="relative h-56 overflow-hidden">
           <img src={p.image} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
           <div className="absolute left-3 top-3 flex gap-2">
             <span className="rounded-full bg-orange-600 px-2.5 py-1 text-[11px] font-bold text-white">{p.duration}</span>
             <Stars value={p.rating} />
@@ -128,7 +128,7 @@ export function EventCard({ e, i = 0 }: { e: DhamEvent; i?: number }) {
       <Link to={`/events/${e.slug}`} className="block">
         <div className="relative h-48 overflow-hidden">
           <img src={e.image} alt={e.title} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/65 to-transparent" />
           <div className="absolute left-3 top-3 rounded-2xl bg-white/95 px-3 py-1.5 text-center shadow">
             <p className="text-lg font-extrabold leading-none text-orange-800">{d.getDate()}</p>
             <p className="text-[10px] font-bold uppercase text-stone-500">{d.toLocaleString("en-IN", { month: "short" })} ’{String(d.getFullYear()).slice(2)}</p>
@@ -151,7 +151,7 @@ export function CourseCard({ c, i = 0 }: { c: Course; i?: number }) {
       <Link to={`/courses/${c.slug}`} className="block">
         <div className="relative h-48 overflow-hidden">
           <img src={c.image} alt={c.title} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
           <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-orange-900">{c.category} · {c.level}</span>
           <span className="absolute bottom-3 left-3 rounded-full bg-emerald-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-300">{c.fee}</span>
         </div>
@@ -170,7 +170,7 @@ export function PlaceCard({ p, i = 0 }: { p: Place; i?: number }) {
       <Link to={`/spiritual-places/${p.slug}`} className="block">
         <div className="relative h-72 overflow-hidden">
           <img src={p.image} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
           <div className="absolute right-3 top-3"><SaveBtn kind="place" slug={p.slug} /></div>
           <div className="absolute bottom-0 left-0 right-0 p-5">
             <span className="rounded-full bg-amber-400/95 px-2.5 py-1 text-[11px] font-extrabold text-[#3a2415]">{p.type}</span>
@@ -187,9 +187,9 @@ export function AshramCard({ a, i = 0 }: { a: Ashram; i?: number }) {
   return (
     <motion.article {...cardMotion} transition={{ duration: 0.55, delay: (i % 2) * 0.08 }} className="img-zoom group grid overflow-hidden rounded-3xl border border-orange-900/10 bg-white sacred-border md:grid-cols-2">
       <Link to={`/ashrams/${a.slug}`} className="contents">
-        <div className="relative h-56 overflow-hidden md:h-full md:min-h-[260px]">
+        <div className="relative h-56 overflow-hidden md:h-full md:min-h-65">
           <img src={a.image} alt={a.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent md:bg-gradient-to-r" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent md:bg-linear-to-r" />
         </div>
         <div className="p-6 md:p-8">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-700">{a.place}, {a.state}</p>

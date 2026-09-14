@@ -7,12 +7,12 @@ import { useApp } from "../context/AppContext";
 
 function Shell({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="relative overflow-hidden bg-[#fffdf7] py-12 md:py-16">
+    <div className="relative overflow-hidden bg-cream-50 py-12 md:py-16">
       <div className="mandala-bg absolute inset-0 opacity-50" aria-hidden />
       <div className="relative mx-auto max-w-md px-4">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: title }]} />
         <Reveal className="mt-6 overflow-hidden rounded-[1.75rem] border border-orange-900/10 bg-white shadow-2xl shadow-orange-900/10">
-          <div className="bg-gradient-to-br from-[#7c2d12] via-[#c2410c] to-orange-600 px-8 pb-8 pt-8 text-center text-white">
+          <div className="bg-linear-to-br from-saffron-900 via-saffron-700 to-orange-600 px-8 pb-8 pt-8 text-center text-white">
             <p className="font-sanskrit text-4xl text-amber-200">ॐ</p>
             <h1 className="font-display mt-1 text-3xl font-semibold">{title}</h1>
             <p className="mt-1 text-sm text-orange-100/90">{sub}</p>

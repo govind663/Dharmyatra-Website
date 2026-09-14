@@ -36,9 +36,9 @@ export function CourseDetail() {
   const wa = waLink(`Namaste! I want to register for: ${c.title} (${c.fee}). Please share batch dates.`);
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img src={c.image} alt={c.title} className="kenburns absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/55 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/55 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Courses", href: "/courses" }, { label: c.title }]} />
           <div className="mt-6 flex flex-wrap gap-2 text-[12px] font-bold">
@@ -63,9 +63,9 @@ export function CourseDetail() {
             </div></Reveal>
           <Reveal className="mt-8">
             <h2 className="font-display flex items-center gap-2 text-2xl font-semibold text-[#2a1a10]"><BookOpen size={22} className="text-orange-600" /> Curriculum</h2>
-            <ol className="mt-4 space-y-2.5">{c.curriculum.map((m, i) => <li key={m} className="flex items-start gap-3 rounded-2xl border border-orange-900/10 bg-white px-4 py-3.5 text-sm text-stone-700"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-orange-600 to-amber-500 text-xs font-extrabold text-white">{i + 1}</span>{m}</li>)}</ol>
+            <ol className="mt-4 space-y-2.5">{c.curriculum.map((m, i) => <li key={m} className="flex items-start gap-3 rounded-2xl border border-orange-900/10 bg-white px-4 py-3.5 text-sm text-stone-700"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-linear-to-br from-orange-600 to-amber-500 text-xs font-extrabold text-white">{i + 1}</span>{m}</li>)}</ol>
           </Reveal>
-          <Reveal className="mt-8 flex items-center gap-3 rounded-3xl bg-[#1c1410] p-6 text-white">
+          <Reveal className="mt-8 flex items-center gap-3 rounded-3xl bg-char-900 p-6 text-white">
             <BadgeCheck size={28} className="shrink-0 text-amber-400" />
             <p className="text-sm leading-relaxed">Certificate of completion, lifetime recordings access and alumni satsang circle included in the fee. Scholarships for gurukul students — <Link to="/contact" className="font-bold text-amber-300 underline">ask us</Link>.</p>
           </Reveal>

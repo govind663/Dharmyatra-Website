@@ -15,7 +15,7 @@ export default function PanditDetail() {
   const wa = waLink(`Namaste! I want to book ${p.name} (${p.title}) for ${p.specializations[0]}. My city/date is…`);
   return (
     <>
-      <div className="bg-gradient-to-br from-[#2a1a10] via-[#7c2d12] to-[#c2410c] text-white">
+      <div className="bg-linear-to-br from-[#2a1a10] via-saffron-900 to-saffron-700 text-white">
         <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 md:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Pandits", href: "/pandits" }, { label: p.name }]} />
           <div className="mt-8 flex flex-col gap-6 md:flex-row md:items-center">

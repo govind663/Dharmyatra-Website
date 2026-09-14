@@ -15,9 +15,9 @@ export default function ServiceDetail() {
   const wa = waLink(`Namaste! I want to book: ${s.name} (${s.price}, ${s.duration}). Please share muhurat & samagri list.`);
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img src={s.image} alt={s.name} className="kenburns absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/50 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/50 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Puja Services", href: "/services" }, { label: s.name }]} />
           <span className="mt-6 inline-block rounded-full bg-amber-400 px-3 py-1 text-[11px] font-extrabold text-[#3a2415]">{s.category}</span>

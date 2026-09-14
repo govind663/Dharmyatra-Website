@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { PANDITS } from "../data/content";

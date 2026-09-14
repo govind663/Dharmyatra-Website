@@ -41,7 +41,7 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 lg:px-8">
       {/* head */}
-      <Reveal className="flex flex-col items-start justify-between gap-4 rounded-[1.75rem] bg-gradient-to-br from-[#2a1a10] via-[#7c2d12] to-[#c2410c] p-6 text-white md:flex-row md:items-center md:p-8">
+      <Reveal className="flex flex-col items-start justify-between gap-4 rounded-[1.75rem] bg-linear-to-br from-[#2a1a10] via-saffron-900 to-saffron-700 p-6 text-white md:flex-row md:items-center md:p-8">
         <div className="flex items-center gap-4">
           <span className="font-display grid h-16 w-16 place-items-center rounded-2xl bg-white/15 text-2xl font-bold text-amber-200 ring-1 ring-white/25">{user.name.charAt(0).toUpperCase()}</span>
           <div><p className="text-xs uppercase tracking-[0.25em] text-amber-300">Jai Shri Ram · Dashboard</p><h1 className="font-display text-2xl font-semibold md:text-3xl">Namaste, {user.name.split(" ")[0]} 🙏</h1><p className="text-sm text-orange-100/80">{user.email} · {user.city}</p></div>

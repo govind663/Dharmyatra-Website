@@ -49,7 +49,7 @@ export function EnquiryForm({ context, title = "Send Enquiry", compact = false }
 export function WhatsAppBand({ title, sub, message }: { title: string; sub: string; message: string }) {
   return (
     <Reveal>
-      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#075E54] via-[#0b7a5f] to-[#128C7E] p-8 text-white md:p-12">
+      <div className="relative overflow-hidden rounded-4xl bg-linear-to-br from-[#075E54] via-[#0b7a5f] to-[#128C7E] p-8 text-white md:p-12">
         <div className="mandala-bg absolute inset-0 opacity-15" aria-hidden />
         <span className="font-sanskrit pointer-events-none absolute -right-4 -top-8 select-none text-[11rem] leading-none text-white/10" aria-hidden>ॐ</span>
         <div className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
@@ -69,11 +69,11 @@ export function WhatsAppBand({ title, sub, message }: { title: string; sub: stri
 
 export function PageHero({ eyebrow, title, sub, image, children }: { eyebrow: string; title: string; sub: string; image: string; children?: ReactNode }) {
   return (
-    <section className="relative overflow-hidden bg-[#1c1410] text-white">
+    <section className="relative overflow-hidden bg-char-900 text-white">
       <div className="absolute inset-0">
         <img src={image} alt="" aria-hidden className="kenburns h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/55 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-transparent to-transparent" />
       </div>
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-16 md:px-6 md:pb-20 md:pt-24 lg:px-8">
         <p className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200 backdrop-blur">{eyebrow}</p>

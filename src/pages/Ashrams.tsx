@@ -28,9 +28,9 @@ export function AshramDetail() {
   const wa = waLink(`Namaste! I wish to stay / join a programme at ${a.name}, ${a.place}. Please guide me.`);
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img src={a.image} alt={a.name} className="kenburns absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/50 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/50 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Ashrams", href: "/ashrams" }, { label: a.name }]} />
           <p className="mt-6 flex items-center gap-1.5 text-sm font-bold text-amber-300"><MapPin size={15} /> {a.place}, {a.state}</p>

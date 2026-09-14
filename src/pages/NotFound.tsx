@@ -5,7 +5,7 @@ import { useSEO } from "../lib/seo";
 export default function NotFound() {
   useSEO({ title: "Page Not Found (404) | DivyaDhara", description: "This page has moved or doesn't exist. Explore temples, pujas, yatras and Panchang.", path: "/404" });
   return (
-    <div className="relative overflow-hidden bg-[#fffdf7] px-4 py-24 text-center">
+    <div className="relative overflow-hidden bg-cream-50 px-4 py-24 text-center">
       <div className="mandala-bg absolute inset-0 opacity-50" aria-hidden />
       <div className="relative mx-auto max-w-lg">
         <p className="font-sanskrit text-6xl text-orange-300">ॐ</p>

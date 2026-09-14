@@ -24,8 +24,8 @@ export function About() {
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <div className="relative overflow-hidden rounded-[2rem]">
-              <img src="/images/ashram-dawn.jpeg" alt="Ashram at dawn" className="h-[420px] w-full object-cover" />
+            <div className="relative overflow-hidden rounded-4xl">
+              <img src="/images/ashram-dawn.jpeg" alt="Ashram at dawn" className="h-105 w-full object-cover" />
               <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-black/55 p-5 text-white backdrop-blur">
                 <p className="font-sanskrit text-lg text-amber-300">॥ सेवा परमो धर्मः ॥</p>
                 <p className="text-sm text-stone-200">Seva is the highest dharma — our team's operating mantra.</p>
@@ -38,7 +38,7 @@ export function About() {
           {[{ i: <Eye size={20} />, t: "Mission", d: "Make every darshan, puja and yatra simple, transparent and shastra-true — for every Indian family, in their own language." }, { i: <Compass size={20} />, t: "Vision", d: "A Bharat where no devotee feels lost: the right temple, pandit, muhurat and route — one trusted search away." }, { i: <HeartHandshake size={20} />, t: "Philosophy", d: "Shraddha with viveka — deep devotion guided by knowledge. We document, verify and explain; the shraddha remains yours." }].map((c, i) => (
             <Reveal key={c.t} delay={i * 0.08}>
               <div className="h-full rounded-3xl border border-orange-900/10 bg-white p-7 text-center sacred-border">
-                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 text-white">{c.i}</span>
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-linear-to-br from-orange-600 to-amber-500 text-white">{c.i}</span>
                 <h3 className="font-display mt-3 text-xl font-semibold">{c.t}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-stone-600">{c.d}</p>
               </div>
@@ -46,7 +46,7 @@ export function About() {
           ))}
         </div>
         {/* stats + trust */}
-        <div className="mt-14 rounded-[2rem] bg-[#1c1410] p-8 text-white md:p-12">
+        <div className="mt-14 rounded-4xl bg-char-900 p-8 text-white md:p-12">
           <div className="grid gap-8 text-center md:grid-cols-4">
             {[{ v: 1200, s: "+", l: "Temples documented" }, { v: 350, s: "+", l: "Verified pandits" }, { v: 52000, s: "+", l: "Pilgrims guided" }, { v: 40, s: "+", l: "Sacred kshetras served" }].map((x) => (
               <div key={x.l}><p className="font-display text-4xl font-bold text-amber-300"><Counter to={x.v} suffix={x.s} /></p><p className="mt-1 text-sm text-stone-300">{x.l}</p></div>
@@ -72,7 +72,7 @@ export function About() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {["Vedic Advisory Board — Kashi Vidvat Parishad scholars review every vidhi and muhurat.", "Kshetra Researchers — on-ground documentation across 7 states and counting.", "Yatra Operations — ex-tourism professionals running sattvic, senior-friendly batches.", "Seva Desk — pilgrim support in 7 languages, 7 AM – 10 PM IST."].map((t, i) => (
               <Reveal key={i} delay={i * 0.07}>
-                <div className="h-full rounded-3xl bg-gradient-to-br from-orange-50 to-amber-50 p-6 ring-1 ring-orange-200"><p className="font-display text-lg font-semibold text-[#2a1a10]">{["Vedic Board", "Researchers", "Yatra Team", "Seva Desk"][i]}</p><p className="mt-2 text-sm text-stone-600">{t}</p></div>
+                <div className="h-full rounded-3xl bg-linear-to-br from-orange-50 to-amber-50 p-6 ring-1 ring-orange-200"><p className="font-display text-lg font-semibold text-[#2a1a10]">{["Vedic Board", "Researchers", "Yatra Team", "Seva Desk"][i]}</p><p className="mt-2 text-sm text-stone-600">{t}</p></div>
               </Reveal>
             ))}
           </div>
@@ -99,7 +99,7 @@ export function Contact() {
             {[{ i: <MapPin size={18} />, t: "Visit / Post", d: "DivyaDhara Seva Kendra, Assi Ghat Road, Varanasi, Uttar Pradesh 221005" }, { i: <Phone size={18} />, t: "Call the Seva Desk", d: `${DISPLAY_PHONE} · 7 AM – 10 PM IST` }, { i: <Mail size={18} />, t: "Email", d: CONTACT_EMAIL }, { i: <MessageCircle size={18} />, t: "WhatsApp (fastest)", d: "Tap to chat — darshan, puja, pandit, yatra, course help" }].map((c, i) => (
               <Reveal key={c.t} delay={i * 0.06}>
                 <div className="flex items-start gap-4 rounded-3xl border border-orange-900/10 bg-white p-5 sacred-border">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 text-white">{c.i}</span>
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-linear-to-br from-orange-600 to-amber-500 text-white">{c.i}</span>
                   <div><h3 className="font-bold text-[#2a1a10]">{c.t}</h3><p className="mt-0.5 text-sm text-stone-600">{c.d}</p>
                     {i === 3 && <a href={waLink("Namaste DivyaDhara!")} target="_blank" rel="noreferrer" className="mt-2 inline-block rounded-xl bg-[#25D366] px-4 py-2 text-[13px] font-bold text-white">Open WhatsApp</a>}</div>
                 </div>

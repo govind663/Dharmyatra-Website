@@ -19,13 +19,13 @@ export function Reveal({ children, delay = 0, y = 28, className }: { children: R
 
 export function Eyebrow({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-orange-700/20 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-800">
+    <span className="inline-flex items-center gap-2 rounded-full border border-orange-700/20 bg-linear-to-r from-orange-50 to-amber-50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-800">
       {icon}{children}
     </span>
   );
 }
 
-export function SectionHead({ eyebrow, title, sub, align = "center", sanskrit }: { eyebrow: string; title: string; sub?: string; align?: "center" | "left"; sanskrit?: string }) {
+export function SectionHead({ eyebrow, title, sub, align = "center", sanskrit }: { eyebrow: string; title: ReactNode; sub?: string; align?: "center" | "left"; sanskrit?: string }) {
   return (
     <Reveal className={cx("mb-10 max-w-3xl md:mb-14", align === "center" ? "mx-auto text-center" : "text-left")}> 
       <Eyebrow><span className="font-sanskrit text-sm normal-case tracking-normal text-orange-700">॥</span> {eyebrow}</Eyebrow>
@@ -33,9 +33,9 @@ export function SectionHead({ eyebrow, title, sub, align = "center", sanskrit }:
       {sanskrit && <p className="font-sanskrit mt-2 text-lg text-orange-800/80">{sanskrit}</p>}
       {sub && <p className="mt-4 text-[15px] leading-relaxed text-stone-600 md:text-base">{sub}</p>}
       <div className={cx("mt-6 flex items-center gap-2", align === "center" && "justify-center")} aria-hidden>
-        <span className="h-px w-14 bg-gradient-to-r from-transparent to-orange-500" />
+        <span className="h-px w-14 bg-linear-to-r from-transparent to-orange-500" />
         <span className="text-orange-600">❖</span>
-        <span className="h-px w-14 bg-gradient-to-l from-transparent to-orange-500" />
+        <span className="h-px w-14 bg-linear-to-l from-transparent to-orange-500" />
       </div>
     </Reveal>
   );
@@ -72,8 +72,7 @@ export function Counter({ to, suffix = "", duration = 1.6 }: { to: number; suffi
   const [n, setN] = useState(0);
   const reduce = useReducedMotion();
   useEffect(() => {
-    if (!inView) return;
-    if (reduce) { setN(to); return; }
+    if (!inView || reduce) return;
     let raf = 0; const t0 = performance.now();
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / (duration * 1000));
@@ -83,7 +82,8 @@ export function Counter({ to, suffix = "", duration = 1.6 }: { to: number; suffi
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [inView, to, duration, reduce]);
-  return <span ref={ref}>{n.toLocaleString("en-IN")}{suffix}</span>;
+  const value = reduce && inView ? to : n;
+  return <span ref={ref}>{value.toLocaleString("en-IN")}{suffix}</span>;
 }
 
 export function Faq({ items }: { items: { q: string; a: string }[] }) {
