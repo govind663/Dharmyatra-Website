@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "astronomy-engine": "^2.1.19",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.35.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
