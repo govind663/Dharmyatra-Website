@@ -310,6 +310,10 @@ const MIN_CALENDAR_ROWS = 5;
 
 const MAX_CALENDAR_ROWS = 6;
 
+const MIN_CALENDAR_YEAR = 1;
+
+const MAX_CALENDAR_YEAR = 9999;
+
 const INDIA_TIMEZONE = "Asia/Kolkata";
 
 /* ============================================================================
@@ -381,22 +385,40 @@ function assertValidDateISO(
   dateISO: string,
 ): void {
   if (
+    typeof dateISO !== "string" ||
     !/^\d{4}-\d{2}-\d{2}$/.test(
       dateISO,
     )
   ) {
     throw new Error(
-      `Invalid dateISO: ${dateISO}. Expected YYYY-MM-DD.`,
+      `Invalid dateISO: ${String(dateISO)}. Expected YYYY-MM-DD.`,
     );
   }
 
-  const parsed =
-    parseDateISO(dateISO);
+  const [
+    yearString,
+    monthString,
+    dayString,
+  ] = dateISO.split("-");
+
+  const year =
+    Number(yearString);
+
+  const month =
+    Number(monthString);
+
+  const day =
+    Number(dayString);
+
+  assertValidYearMonth(
+    year,
+    month - 1,
+  );
 
   assertValidDay(
-    parsed.year,
-    parsed.month0,
-    parsed.day,
+    year,
+    month - 1,
+    day,
   );
 }
 
@@ -513,10 +535,90 @@ function sortCalendarEvents(
 
 function getCalendarIndiaRegions(): IndiaRegion[] {
   const regions = new Set<IndiaRegion>();
+
   for (const location of Object.values(INDIA_LOCATIONS)) {
-    if (location.region) regions.add(location.region);
+    if (location.region) {
+      regions.add(location.region);
+    }
   }
+
   return Array.from(regions);
+}
+
+/**
+ * Validate a location before handing it to the calculation engine.
+ * This keeps calendar-level failures explicit instead of surfacing as a
+ * partially rendered calendar.
+ */
+function assertValidCalendarLocation(
+  location: PanchangLocation,
+): void {
+  if (!location || typeof location !== "object") {
+    throw new Error("A valid calendar location is required.");
+  }
+
+  if (
+    !Number.isFinite(location.latitude) ||
+    location.latitude < -90 ||
+    location.latitude > 90
+  ) {
+    throw new Error(
+      `Invalid calendar latitude: ${location.latitude}`,
+    );
+  }
+
+  if (
+    !Number.isFinite(location.longitude) ||
+    location.longitude < -180 ||
+    location.longitude > 180
+  ) {
+    throw new Error(
+      `Invalid calendar longitude: ${location.longitude}`,
+    );
+  }
+
+  if (
+    typeof location.timezone !== "string" ||
+    !location.timezone.trim()
+  ) {
+    throw new Error("A valid IANA timezone is required for the calendar.");
+  }
+
+  try {
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: location.timezone,
+    }).format();
+  } catch {
+    throw new Error(
+      `Invalid calendar timezone: ${location.timezone}`,
+    );
+  }
+}
+
+function assertValidWeekStartsOn(
+  weekStartsOn: CalendarWeekStartsOn,
+): void {
+  if (
+    weekStartsOn !== "sunday" &&
+    weekStartsOn !== "monday"
+  ) {
+    throw new Error(
+      `Invalid calendar week start: ${String(weekStartsOn)}`,
+    );
+  }
+}
+
+function assertValidNavigationDirection(
+  direction: "previous" | "next",
+): void {
+  if (
+    direction !== "previous" &&
+    direction !== "next"
+  ) {
+    throw new Error(
+      `Invalid navigation direction: ${String(direction)}`,
+    );
+  }
 }
 
 function getPanchangForCalendarParts(
@@ -525,6 +627,9 @@ function getPanchangForCalendarParts(
   day: number,
   location: PanchangLocation,
 ): Panchang {
+  assertValidDay(year, month0, day);
+  assertValidCalendarLocation(location);
+
   return calculatePanchang(
     createLocalDate(year, month0, day),
     location,
@@ -551,17 +656,23 @@ export function createLocalDate(
     day,
   );
 
-  return new Date(
-    Date.UTC(
-      year,
-      month0,
-      day,
-      12,
-      0,
-      0,
-      0,
-    ),
+  // Avoid Date.UTC's legacy 1900-offset behavior for years 0-99.
+  const result = new Date(0);
+
+  result.setUTCFullYear(
+    year,
+    month0,
+    day,
   );
+
+  result.setUTCHours(
+    12,
+    0,
+    0,
+    0,
+  );
+
+  return result;
 }
 
 /**
@@ -645,13 +756,23 @@ export function getDaysInMonth(
     month0,
   );
 
-  return new Date(
-    Date.UTC(
-      year,
-      month0 + 1,
-      0,
-    ),
-  ).getUTCDate();
+  // Avoid Date.UTC's legacy 1900-offset behavior for years 0-99.
+  const result = new Date(0);
+
+  result.setUTCFullYear(
+    year,
+    month0 + 1,
+    0,
+  );
+
+  result.setUTCHours(
+    0,
+    0,
+    0,
+    0,
+  );
+
+  return result.getUTCDate();
 }
 
 /**
@@ -670,13 +791,23 @@ export function getFirstWeekday(
     month0,
   );
 
-  return new Date(
-    Date.UTC(
-      year,
-      month0,
-      1,
-    ),
-  ).getUTCDay();
+  // Avoid Date.UTC's legacy 1900-offset behavior for years 0-99.
+  const result = new Date(0);
+
+  result.setUTCFullYear(
+    year,
+    month0,
+    1,
+  );
+
+  result.setUTCHours(
+    0,
+    0,
+    0,
+    0,
+  );
+
+  return result.getUTCDay();
 }
 
 /**
@@ -694,6 +825,12 @@ export function getPreviousMonth(
   if (
     month0 === 0
   ) {
+    if (year === MIN_CALENDAR_YEAR) {
+      throw new Error(
+        "Cannot navigate before the supported calendar year 1.",
+      );
+    }
+
     return {
       year:
         year - 1,
@@ -732,6 +869,12 @@ export function getNextMonth(
   if (
     month0 === 11
   ) {
+    if (year === MAX_CALENDAR_YEAR) {
+      throw new Error(
+        "Cannot navigate beyond the supported calendar year 9999.",
+      );
+    }
+
     return {
       year:
         year + 1,
@@ -935,8 +1078,20 @@ export function addDaysToISO(
       days,
   );
 
+  const resultYear =
+    date.getUTCFullYear();
+
+  if (
+    resultYear < MIN_CALENDAR_YEAR ||
+    resultYear > MAX_CALENDAR_YEAR
+  ) {
+    throw new Error(
+      `Resulting calendar date is outside the supported range ${MIN_CALENDAR_YEAR}-${MAX_CALENDAR_YEAR}.`,
+    );
+  }
+
   return getDateISO(
-    date.getUTCFullYear(),
+    resultYear,
     date.getUTCMonth(),
     date.getUTCDate(),
   );
@@ -967,6 +1122,8 @@ export function getCalendarTithi(
       "Invalid date supplied to getCalendarTithi().",
     );
   }
+
+  assertValidCalendarLocation(location);
 
   const panchang = calculatePanchang(
     date,
@@ -1404,6 +1561,7 @@ export function getCalendarFestivalEventsForDate(
   assertValidDateISO(
     dateISO,
   );
+  assertValidCalendarLocation(location);
 
   const festivals =
     getFestivalsForDate(
@@ -1435,6 +1593,7 @@ export function getFestivalEventsForMonth(
     year,
     month0,
   );
+  assertValidCalendarLocation(location);
 
   const festivals =
     getFestivalsForMonth(
@@ -1460,13 +1619,8 @@ export function getFestivalEventsForYear(
   location: PanchangLocation =
     DEFAULT_LOCATION,
 ): CalendarEvent[] {
-  if (
-    !Number.isInteger(year)
-  ) {
-    throw new Error(
-      `Invalid year: ${year}`,
-    );
-  }
+  assertValidYearMonth(year, 0);
+  assertValidCalendarLocation(location);
 
   const events: CalendarEvent[] =
     [];
@@ -1503,16 +1657,20 @@ export function getCalendarEventsForDate(
   date: Date,
   location: PanchangLocation =
     DEFAULT_LOCATION,
+  precomputedPanchang?: Panchang,
 ): CalendarEvent[] {
   if (
+    !(date instanceof Date) ||
     Number.isNaN(
       date.getTime(),
     )
   ) {
     throw new Error(
-      "Invalid date supplied.",
+      "Invalid date supplied to getCalendarEventsForDate().",
     );
   }
+
+  assertValidCalendarLocation(location);
 
   const dateISO =
     getDateISO(
@@ -1528,15 +1686,34 @@ export function getCalendarEventsForDate(
     );
 
   const tithi =
-    getCalendarTithi(
-      date,
-      location,
-    );
+    precomputedPanchang
+      ? {
+          name:
+            precomputedPanchang.tithi
+              .name,
 
-  const events: CalendarEvent[] =
-    [
-      ...festivalEvents,
-    ];
+          shortName:
+            createTithiShortName(
+              precomputedPanchang
+                .tithi.name,
+            ),
+
+          index:
+            precomputedPanchang.tithi
+              .index,
+
+          paksha:
+            precomputedPanchang.tithi
+              .paksha,
+        }
+      : getCalendarTithi(
+          date,
+          location,
+        );
+
+  const events: CalendarEvent[] = [
+    ...festivalEvents,
+  ];
 
   /*
    * We add fallback markers only when the festival engine has not already
@@ -1548,8 +1725,7 @@ export function getCalendarEventsForDate(
     ): boolean =>
       events.some(
         (event) =>
-          event.type ===
-          type,
+          event.type === type,
       );
 
   const hasTitle =
@@ -1730,41 +1906,39 @@ export function createCalendarDay(
   const weekday =
     date.getUTCDay();
 
-  const tithi =
-    getCalendarTithi(
-      date,
+  // One Panchang calculation is enough for Tithi + optional daily details.
+  // The same object is passed to getCalendarEventsForDate() to avoid a second
+  // full Panchang calculation for every calendar cell.
+  const dailyPanchang =
+    getPanchangForCalendarParts(
+      year,
+      month0,
+      day,
       location,
     );
 
-  let panchang:
-    | Panchang
-    | undefined;
-
-  if (
-    includePanchang
-  ) {
-    panchang =
-      getPanchangForCalendarParts(
-        year,
-        month0,
-        day,
-        location,
-      );
-  }
+  const tithi = {
+    name: dailyPanchang.tithi.name,
+    shortName: createTithiShortName(
+      dailyPanchang.tithi.name,
+    ),
+    index: dailyPanchang.tithi.index,
+    paksha: dailyPanchang.tithi.paksha,
+  };
 
   const nakshatra =
-    panchang
+    dailyPanchang.nakshatra
       ? {
           name:
-            panchang.nakshatra
+            dailyPanchang.nakshatra
               .name,
 
           index:
-            panchang.nakshatra
+            dailyPanchang.nakshatra
               .index,
 
           pada:
-            panchang.nakshatra
+            dailyPanchang.nakshatra
               .pada,
         }
       : undefined;
@@ -1812,9 +1986,13 @@ export function createCalendarDay(
       getCalendarEventsForDate(
         date,
         location,
+        dailyPanchang,
       ),
 
-    panchang,
+    panchang:
+      includePanchang
+        ? dailyPanchang
+        : undefined,
   };
 }
 
@@ -1951,7 +2129,12 @@ export function getCalendarStartOffset(
   firstWeekday: number,
   weekStartsOn: CalendarWeekStartsOn,
 ): number {
+  assertValidWeekStartsOn(
+    weekStartsOn,
+  );
+
   if (
+    !Number.isInteger(firstWeekday) ||
     firstWeekday < 0 ||
     firstWeekday > 6
   ) {
@@ -2000,6 +2183,14 @@ export function buildMonthlyCalendar(
   const weekStartsOn =
     options?.weekStartsOn ??
     "sunday";
+
+  assertValidWeekStartsOn(
+    weekStartsOn,
+  );
+
+  assertValidCalendarLocation(
+    location,
+  );
 
   const includePanchang =
     options?.includePanchang ??
@@ -2719,6 +2910,10 @@ export function getWeekdayLabels(
   weekStartsOn: CalendarWeekStartsOn =
     "sunday",
 ): string[] {
+  assertValidWeekStartsOn(
+    weekStartsOn,
+  );
+
   if (
     weekStartsOn ===
     "sunday"
@@ -2746,6 +2941,10 @@ export function getWeekdayLabelsHindi(
   weekStartsOn: CalendarWeekStartsOn =
     "sunday",
 ): string[] {
+  assertValidWeekStartsOn(
+    weekStartsOn,
+  );
+
   if (
     weekStartsOn ===
     "sunday"
@@ -2793,11 +2992,23 @@ export function navigateMonth(
     year,
     month0,
   );
+  assertValidNavigationDirection(
+    direction,
+  );
 
   if (
     direction ===
     "previous"
   ) {
+    if (
+      month0 === 0 &&
+      year === MIN_CALENDAR_YEAR
+    ) {
+      throw new Error(
+        "Cannot navigate before the supported calendar year 1.",
+      );
+    }
+
     return month0 === 0
       ? {
           year:
@@ -2812,6 +3023,15 @@ export function navigateMonth(
           month0:
             month0 - 1,
         };
+  }
+
+  if (
+    month0 === 11 &&
+    year === MAX_CALENDAR_YEAR
+  ) {
+    throw new Error(
+      "Cannot navigate beyond the supported calendar year 9999.",
+    );
   }
 
   return month0 === 11
@@ -2839,20 +3059,26 @@ export function navigateYear(
     | "previous"
     | "next",
 ): number {
+  assertValidYearMonth(year, 0);
+  assertValidNavigationDirection(
+    direction,
+  );
+
+  const nextYear =
+    direction === "previous"
+      ? year - 1
+      : year + 1;
+
   if (
-    !Number.isInteger(
-      year,
-    )
+    nextYear < MIN_CALENDAR_YEAR ||
+    nextYear > MAX_CALENDAR_YEAR
   ) {
     throw new Error(
-      `Invalid year: ${year}`,
+      `Year navigation is limited to ${MIN_CALENDAR_YEAR}-${MAX_CALENDAR_YEAR}.`,
     );
   }
 
-  return direction ===
-    "previous"
-    ? year - 1
-    : year + 1;
+  return nextYear;
 }
 
 /* ============================================================================
@@ -2901,6 +3127,8 @@ export function getMonthDateISOs(
   year: number,
   month0: number,
 ): string[] {
+  assertValidYearMonth(year, month0);
+
   const days =
     getDaysInMonth(
       year,
@@ -2932,15 +3160,8 @@ export function getYearCalendar(
   location: PanchangLocation =
     DEFAULT_LOCATION,
 ): MonthlyCalendar[] {
-  if (
-    !Number.isInteger(
-      year,
-    )
-  ) {
-    throw new Error(
-      `Invalid year: ${year}`,
-    );
-  }
+  assertValidYearMonth(year, 0);
+  assertValidCalendarLocation(location);
 
   return Array.from(
     {
@@ -3494,6 +3715,10 @@ export type CalendarPersonalization = {
 export function getCalendarTrustNote(
   location: PanchangLocation = DEFAULT_LOCATION,
 ): CalendarPersonalization {
+  assertValidCalendarLocation(
+    location,
+  );
+
   const city = location.city ?? location.name ?? "Selected location";
   const state = location.state;
   const region = location.region;
@@ -3518,6 +3743,7 @@ export function getPersonalizedCalendarEventsForMonth(
   location: PanchangLocation = DEFAULT_LOCATION,
 ): CalendarEvent[] {
   assertValidYearMonth(year, month0);
+  assertValidCalendarLocation(location);
 
   const festivals = getPersonalizedFestivals(
     year,
@@ -3734,6 +3960,13 @@ const calendar = {
   createMonthlyEventIndex,
 
   createCalendarDayMap,
+
+  VARAS,
+
+  monthCalendar,
+
+  getIndiaRegions,
+
 };
 
 /* ============================================================================

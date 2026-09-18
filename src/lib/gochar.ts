@@ -51,8 +51,6 @@
  */
 
 import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  PLANETS,
   ZODIAC_SIGNS,
   type PlanetName,
   type PlanetPosition,
@@ -63,6 +61,7 @@ import {
   getAngularSeparation,
   getAyanamsha,
   getPlanetPosition,
+  getRashiNameHindi,
   getZodiacSignFromLongitude,
   normalizeDegrees,
   type AstrologyBirthDetails,
@@ -141,6 +140,11 @@ export interface TransitAspect {
    * Exact angular separation from a supplied natal longitude.
    */
   angularSeparation?: number;
+
+  /**
+   * Absolute deviation from the applicable sign-aspect angular target.
+   */
+  orbDifference?: number;
 }
 
 /**
@@ -166,6 +170,11 @@ export interface GocharPosition {
    * Rashi.
    */
   sign: ZodiacSign;
+
+  /**
+   * Hindi Rashi name for UI/accessibility.
+   */
+  signHindi: string;
 
   /**
    * English zodiac sign.
@@ -299,8 +308,7 @@ export interface GocharSignChange {
 /**
  * Birth details used by personalized Gochar calculations.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface GocharBirthDetails extends AstrologyBirthDetails {}
+export type GocharBirthDetails = AstrologyBirthDetails;
 
 /**
  * Trust metadata for Gochar calculations.
@@ -467,7 +475,7 @@ function ensureDate(value: Date | string | number): Date {
       ? new Date(value.getTime())
       : new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!Number.isFinite(date.getTime())) {
     throw new Error(`Invalid transit date: ${String(value)}`);
   }
 
@@ -561,6 +569,113 @@ function signDistance(
       SIGN_COUNT,
     ) + 1
   );
+}
+
+/**
+ * Normalize and validate a zodiac sign index.
+ *
+ * The public helpers historically accepted any finite numeric index;
+ * wrapping keeps that compatibility while rejecting NaN/Infinity.
+ */
+function normalizeSignIndex(signIndex: number): number {
+  if (!Number.isFinite(signIndex)) {
+    throw new Error("signIndex must be a finite number.");
+  }
+
+  return positiveModulo(
+    Math.trunc(signIndex),
+    SIGN_COUNT,
+  );
+}
+
+/**
+ * Return the unsigned angular distance represented by a Vedic sign-aspect
+ * offset. Offsets beyond 180° have an equivalent shortest separation.
+ */
+function getAspectTargetSeparation(
+  house: number,
+): number {
+  const targetAngle = positiveModulo(
+    (house - 1) * 30,
+    360,
+  );
+
+  return Math.min(
+    targetAngle,
+    360 - targetAngle,
+  );
+}
+
+/**
+ * Calculate the difference between an actual angular separation and a Vedic
+ * aspect target separation.
+ */
+function getAspectOrbDifference(
+  separation: number,
+  house: number,
+): number {
+  return Math.abs(
+    separation -
+      getAspectTargetSeparation(house),
+  );
+}
+
+/**
+ * Build transit-house rows from an already calculated transit map.
+ */
+function buildTransitHousePositions(
+  reference: GocharReference,
+  referenceSignIndex: number,
+  positions: Record<GocharPlanet, GocharPosition>,
+): GocharHousePosition[] {
+  const safeReferenceSignIndex =
+    normalizeSignIndex(referenceSignIndex);
+
+  const referenceSign =
+    getZodiacSignFromLongitude(
+      safeReferenceSignIndex * 30,
+    );
+
+  return GOCHAR_PLANETS.map((planet) => {
+    const transit = positions[planet];
+
+    const transitSignIndex =
+      longitudeToSignIndex(
+        transit.siderealLongitude,
+      );
+
+    const house =
+      signDistance(
+        safeReferenceSignIndex,
+        transitSignIndex,
+      );
+
+    const referenceDistance =
+      signDistance(
+        transitSignIndex,
+        safeReferenceSignIndex,
+      );
+
+    const hasSpecialAspect =
+      referenceDistance !== 7 &&
+      getPlanetAspectHouses(
+        planet,
+      ).includes(referenceDistance);
+
+    return {
+      planet,
+      reference,
+      referenceSign,
+      referenceSignIndex:
+        safeReferenceSignIndex,
+      transitSign: transit.sign,
+      transitSignIndex,
+      house,
+      isConjunctReference:
+        house === 1,
+      hasSpecialAspect,
+    };
+  });
 }
 
 /**
@@ -660,6 +775,10 @@ function ensureOrb(
 /**
  * Get complete sidereal Gochar position for one planet.
  *
+ * `date` represents the exact instant used by the astronomy engine. Callers
+ * should convert a calendar day to the desired timezone/instant before calling
+ * this function when time-of-day precision matters.
+ *
  * Astronomy remains delegated to astrology.ts.
  */
 export function getGocharPosition(
@@ -680,6 +799,16 @@ export function getGocharPosition(
     normalizeDegrees(
       position.longitude,
     );
+
+  const calculatedSign =
+    getZodiacSignFromLongitude(
+      siderealLongitude,
+    );
+
+  const sign =
+    calculatedSign === position.sign
+      ? position.sign
+      : calculatedSign;
 
   /**
    * Current astrology.ts stores sidereal longitude.
@@ -717,7 +846,10 @@ export function getGocharPosition(
 
     siderealLongitude,
 
-    sign: position.sign,
+    sign,
+
+    signHindi:
+      getRashiNameHindi(sign),
 
     signEnglish:
       position.signEnglish,
@@ -916,11 +1048,8 @@ export function getTransitHouseFromSign(
     ensureDate(date);
 
   const safeReferenceSignIndex =
-    positiveModulo(
-      Math.trunc(
-        referenceSignIndex,
-      ),
-      SIGN_COUNT,
+    normalizeSignIndex(
+      referenceSignIndex,
     );
 
   const transit =
@@ -1006,14 +1135,15 @@ export function getTransitHousesFromMoon(
       birthDetails,
     );
 
-  return GOCHAR_PLANETS.map(
-    (planet) =>
-      getTransitHouseFromSign(
-        planet,
-        reference.signIndex,
-        date,
-        "Moon",
-      ),
+  const positions =
+    getAllGocharPositions(
+      date,
+    );
+
+  return buildTransitHousePositions(
+    "Moon",
+    reference.signIndex,
+    positions,
   );
 }
 
@@ -1029,14 +1159,15 @@ export function getTransitHousesFromSun(
       birthDetails,
     );
 
-  return GOCHAR_PLANETS.map(
-    (planet) =>
-      getTransitHouseFromSign(
-        planet,
-        reference.signIndex,
-        date,
-        "Sun",
-      ),
+  const positions =
+    getAllGocharPositions(
+      date,
+    );
+
+  return buildTransitHousePositions(
+    "Sun",
+    reference.signIndex,
+    positions,
   );
 }
 
@@ -1052,14 +1183,15 @@ export function getTransitHousesFromAscendant(
       birthDetails,
     );
 
-  return GOCHAR_PLANETS.map(
-    (planet) =>
-      getTransitHouseFromSign(
-        planet,
-        reference.signIndex,
-        date,
-        "Ascendant",
-      ),
+  const positions =
+    getAllGocharPositions(
+      date,
+    );
+
+  return buildTransitHousePositions(
+    "Ascendant",
+    reference.signIndex,
+    positions,
   );
 }
 
@@ -1209,20 +1341,11 @@ export function isTransitAspectingNatalLongitude(
       transitPlanet,
     )
   ) {
-    const targetAngle =
-      (house - 1) * 30;
-
-    const difference = Math.min(
-      Math.abs(
-        separation -
-          targetAngle,
-      ),
-      Math.abs(
-        360 -
-          separation -
-          targetAngle,
-      ),
-    );
+    const difference =
+      getAspectOrbDifference(
+        separation,
+        house,
+      );
 
     if (
       difference <=
@@ -1281,20 +1404,10 @@ export function getTransitAspectsToNatalLongitude(
     transitPlanet,
   )
     .filter((house) => {
-      const targetAngle =
-        (house - 1) * 30;
-
       const difference =
-        Math.min(
-          Math.abs(
-            separation -
-              targetAngle,
-          ),
-          Math.abs(
-            360 -
-              separation -
-              targetAngle,
-          ),
+        getAspectOrbDifference(
+          separation,
+          house,
         );
 
       return (
@@ -1337,6 +1450,12 @@ export function getTransitAspectsToNatalLongitude(
 
         angularSeparation:
           separation,
+
+        orbDifference:
+          getAspectOrbDifference(
+            separation,
+            house,
+          ),
       };
     });
 }
@@ -1482,9 +1601,8 @@ export function getPlanetsInSignIndex(
   date: Date | string | number = new Date(),
 ): GocharPosition[] {
   const safeIndex =
-    positiveModulo(
-      Math.trunc(signIndex),
-      SIGN_COUNT,
+    normalizeSignIndex(
+      signIndex,
     );
 
   const sign =
@@ -1650,20 +1768,37 @@ export function calculatePersonalizedGochar(
       normalizedDate,
     );
 
-  const moon =
-    getNatalMoonReference(
+  const kundli =
+    calculateKundli(
       birthDetails,
     );
+
+  const moon =
+    kundli.planets.Moon;
 
   const sun =
-    getNatalSunReference(
-      birthDetails,
-    );
+    kundli.planets.Sun;
 
   const ascendant =
-    getNatalAscendantReference(
-      birthDetails,
+    kundli.ascendant;
+
+  const moonSignIndex =
+    getRashiIndex(
+      moon.sign,
     );
+
+  const sunSignIndex =
+    getRashiIndex(
+      sun.sign,
+    );
+
+  const ascendantSignIndex =
+    getRashiIndex(
+      ascendant.sign,
+    );
+
+  const positions =
+    chart.planets;
 
   return {
     date:
@@ -1676,12 +1811,13 @@ export function calculatePersonalizedGochar(
         moon.sign,
 
       signIndex:
-        moon.signIndex,
+        moonSignIndex,
 
       houses:
-        getTransitHousesFromMoon(
-          birthDetails,
-          normalizedDate,
+        buildTransitHousePositions(
+          "Moon",
+          moonSignIndex,
+          positions,
         ),
     },
 
@@ -1690,12 +1826,13 @@ export function calculatePersonalizedGochar(
         ascendant.sign,
 
       signIndex:
-        ascendant.signIndex,
+        ascendantSignIndex,
 
       houses:
-        getTransitHousesFromAscendant(
-          birthDetails,
-          normalizedDate,
+        buildTransitHousePositions(
+          "Ascendant",
+          ascendantSignIndex,
+          positions,
         ),
     },
 
@@ -1704,12 +1841,13 @@ export function calculatePersonalizedGochar(
         sun.sign,
 
       signIndex:
-        sun.signIndex,
+        sunSignIndex,
 
       houses:
-        getTransitHousesFromSun(
-          birthDetails,
-          normalizedDate,
+        buildTransitHousePositions(
+          "Sun",
+          sunSignIndex,
+          positions,
         ),
     },
 
@@ -1717,12 +1855,15 @@ export function calculatePersonalizedGochar(
       getAllTransitAspects(
         normalizedDate,
       ),
+
     trust: getGocharTrustMetadata(
       birthDetails.location,
     ),
-    personalization: getGocharPersonalizationContext(
-      birthDetails,
-    ),
+
+    personalization:
+      getGocharPersonalizationContext(
+        birthDetails,
+      ),
   };
 }
 
@@ -2089,6 +2230,7 @@ export interface GocharSummary {
   planets: Array<{
     planet: GocharPlanet;
     sign: ZodiacSign;
+    signHindi: string;
     degree: number;
     nakshatra: string;
     nakshatraPada: number;
@@ -2100,6 +2242,7 @@ export interface GocharSummary {
   majorTransits: Array<{
     planet: GocharPlanet;
     sign: ZodiacSign;
+    signHindi: string;
     degree: number;
     isRetrograde: boolean;
   }>;
@@ -2130,6 +2273,9 @@ export function getGocharSummary(
 
           sign:
             position.sign,
+
+          signHindi:
+            position.signHindi,
 
           degree:
             position.degreeInSign,
@@ -2175,6 +2321,9 @@ export function getGocharSummary(
             sign:
               position.sign,
 
+            signHindi:
+              position.signHindi,
+
             degree:
               position.degreeInSign,
 
@@ -2207,9 +2356,20 @@ function getGocharLocationLabel(
 ): string {
   if (!location) return "India (default calculation location)";
 
-  const parts = [location.city, location.state, location.country]
-    .filter((value): value is string => Boolean(value && value.trim()))
-    .map((value) => value.trim());
+  const parts = [
+    location.city,
+    location.state,
+    location.country,
+  ]
+    .filter(
+      (value): value is string =>
+        typeof value === "string" &&
+        value.trim().length > 0,
+    )
+    .map(
+      (value) =>
+        value.trim(),
+    );
 
   if (parts.length) return parts.join(", ");
   return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
@@ -2261,7 +2421,7 @@ export function getGocharPersonalizationContext(
   if (!birthDetails) {
     return {
       locationLabel: trust.locationLabel,
-      relevance: location ? "selected-city" : "india",
+      relevance: "india",
       referencePriority: ["Moon", "Ascendant", "Sun"],
       message:
         "This is a general Gochar view. Add your birth date, birth time and birth location to relate transits to your natal Moon, Lagna and Sun.",
@@ -2301,7 +2461,20 @@ export function getPanIndiaGocharLocations() {
  * Find a supported Indian Gochar location by city/state/name.
  */
 export function findGocharLocation(query: string) {
-  return findAstrologyLocation(query);
+  if (typeof query !== "string") {
+    return undefined;
+  }
+
+  const normalizedQuery =
+    query.trim();
+
+  if (!normalizedQuery) {
+    return undefined;
+  }
+
+  return findAstrologyLocation(
+    normalizedQuery,
+  );
 }
 
 /**

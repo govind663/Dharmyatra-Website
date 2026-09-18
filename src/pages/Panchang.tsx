@@ -4,6 +4,7 @@ import {
   Component,
   useMemo,
   useState,
+  type ChangeEvent,
   type ErrorInfo,
   type FormEvent,
   type ReactNode,
@@ -143,7 +144,7 @@ class PanchangErrorBoundary extends Component<
   }
 
   componentDidCatch(
-    error: unknown,
+    error: Error,
     errorInfo: ErrorInfo,
   ) {
     console.error(
@@ -158,7 +159,7 @@ class PanchangErrorBoundary extends Component<
   };
 
   handleHome = () => {
-    window.location.href = "/";
+    window.location.assign("/");
   };
 
   render() {
@@ -218,15 +219,33 @@ class PanchangErrorBoundary extends Component<
    SAFE HELPERS
 ========================================================= */
 
+function isUsableLocation(
+  location: PanchangLocation | null | undefined,
+): location is PanchangLocation {
+  if (!location) return false;
+
+  return (
+    Number.isFinite(Number(location.latitude)) &&
+    Number.isFinite(Number(location.longitude)) &&
+    Number(location.latitude) >= -90 &&
+    Number(location.latitude) <= 90 &&
+    Number(location.longitude) >= -180 &&
+    Number(location.longitude) <= 180 &&
+    typeof location.timezone === "string" &&
+    location.timezone.trim().length > 0
+  );
+}
+
 function getSafeLocations(): PanchangLocation[] {
   try {
     const locations = getIndiaLocations();
 
-    if (
-      Array.isArray(locations) &&
-      locations.length > 0
-    ) {
-      return locations;
+    if (Array.isArray(locations)) {
+      const usable = locations.filter(isUsableLocation);
+
+      if (usable.length > 0) {
+        return usable;
+      }
     }
   } catch (error) {
     console.error(
@@ -235,7 +254,9 @@ function getSafeLocations(): PanchangLocation[] {
     );
   }
 
-  return [DEFAULT_LOCATION];
+  return isUsableLocation(DEFAULT_LOCATION)
+    ? [DEFAULT_LOCATION]
+    : [];
 }
 
 function getSafeLocation(
@@ -247,7 +268,7 @@ function getSafeLocation(
     try {
       const found = getLocationById(id);
 
-      if (found) {
+      if (isUsableLocation(found)) {
         return found;
       }
     } catch (error) {
@@ -256,13 +277,33 @@ function getSafeLocation(
         error,
       );
     }
+
+    const normalizedId = id.trim().toLowerCase();
+
+    const localMatch = locations.find(
+      (item) =>
+        String(item.id ?? "")
+          .trim()
+          .toLowerCase() === normalizedId,
+    );
+
+    if (localMatch) {
+      return localMatch;
+    }
   }
 
+  const defaultMatch = locations.find(
+    (item) =>
+      String(item.id ?? "")
+        .trim()
+        .toLowerCase() ===
+      String(DEFAULT_LOCATION.id ?? "")
+        .trim()
+        .toLowerCase(),
+  );
+
   return (
-    locations.find(
-      (item) =>
-        item.id === DEFAULT_LOCATION.id,
-    ) ??
+    defaultMatch ??
     locations[0] ??
     DEFAULT_LOCATION
   );
@@ -272,6 +313,21 @@ function safeComputePanchang(
   date: Date,
   location: PanchangLocation,
 ) {
+  if (
+    !(date instanceof Date) ||
+    Number.isNaN(date.getTime())
+  ) {
+    throw new Error(
+      "Invalid Panchang date.",
+    );
+  }
+
+  if (!isUsableLocation(location)) {
+    throw new Error(
+      "Invalid Panchang location.",
+    );
+  }
+
   try {
     return computePanchang(
       date,
@@ -382,9 +438,11 @@ function LocationSelector({
     );
 
   const selectedId =
-    location?.id ??
-    locations[0]?.id ??
-    "";
+    String(
+      location?.id ??
+        locations[0]?.id ??
+        "",
+    );
 
   return (
     <div className="flex items-center gap-2 rounded-2xl bg-white/10 p-2 backdrop-blur">
@@ -395,7 +453,7 @@ function LocationSelector({
 
       <select
         value={selectedId}
-        onChange={(event) => {
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
           const selected =
             getSafeLocation(
               event.target.value,
@@ -409,8 +467,8 @@ function LocationSelector({
         {locations.map(
           (item) => (
             <option
-              key={item.id}
-              value={item.id}
+              key={item.id ?? item.name ?? `${item.latitude}-${item.longitude}`}
+              value={item.id ?? ""}
               className="text-stone-900"
             >
               {item.name}
@@ -426,12 +484,94 @@ function LocationSelector({
    PAN-INDIA TRUST + PERSONALIZATION
 ========================================================= */
 
-function getLocationLabel(location: PanchangLocation): string {
-  return (
-    location.name ??
-    location.city ??
-    "Selected India location"
+function getLocationLabel(
+  location: PanchangLocation,
+): string {
+  const name = String(location?.name ?? "").trim();
+  if (name) return name;
+
+  const city = String(location?.city ?? "").trim();
+  if (city) return city;
+
+  return "Selected India location";
+}
+
+function getSafeTimeZone(
+  timeZone: string | null | undefined,
+): string {
+  const candidate = String(timeZone ?? "").trim();
+
+  if (!candidate) {
+    return "Asia/Kolkata";
+  }
+
+  try {
+    new Intl.DateTimeFormat("en-IN", {
+      timeZone: candidate,
+    }).format();
+    return candidate;
+  } catch {
+    return "Asia/Kolkata";
+  }
+}
+
+function getDateKeyInTimeZone(
+  date: Date,
+  timeZone: string,
+): string {
+  const safeDate = toValidDate(date);
+
+  if (!safeDate) {
+    return "";
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    calendar: "gregory",
+    timeZone: getSafeTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const parts = formatter.formatToParts(safeDate);
+
+  const values: Record<string, string> = {};
+
+  for (const part of parts) {
+    if (
+      part.type === "year" ||
+      part.type === "month" ||
+      part.type === "day"
+    ) {
+      values[part.type] = part.value;
+    }
+  }
+
+  return [
+    values.year ?? "",
+    values.month ?? "",
+    values.day ?? "",
+  ].join("-");
+}
+
+function createLocalNoonDate(
+  year: number,
+  monthIndex: number,
+  day: number,
+): Date {
+  const date = new Date(0);
+  date.setFullYear(
+    year,
+    monthIndex,
+    day,
   );
+  date.setHours(
+    12,
+    0,
+    0,
+    0,
+  );
+  return date;
 }
 
 function PersonalizationTrustBar({
@@ -460,6 +600,18 @@ function PersonalizationTrustBar({
       ? String(location.region).replace(/-/g, " ")
       : "India";
 
+  const basisLabels =
+    active === "rashifal"
+      ? ["Rashi-based guidance", "Daily calculation"]
+      : active === "kundli"
+        ? ["Lahiri Sidereal", "Birth-chart calculation"]
+        : ["Lahiri Sidereal", "Astronomy calculation"];
+
+  const locationModeLabel =
+    active === "rashifal"
+      ? "date-aware guidance"
+      : "location-aware calculation";
+
   return (
     <div className="border-b border-orange-900/10 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 lg:px-8">
@@ -473,27 +625,38 @@ function PersonalizationTrustBar({
                 Personalized for {getLocationLabel(location)}
               </p>
               <p className="mt-0.5 text-[11px] leading-5 text-emerald-800/80">
-                {moduleLabel} · {regionLabel} · location-aware calculation
+                {moduleLabel} · {regionLabel} · {locationModeLabel}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-emerald-900">
+            {basisLabels.map((label) => (
+              <span
+                key={label}
+                className="rounded-full bg-white px-2.5 py-1 ring-1 ring-emerald-900/10"
+              >
+                {label}
+              </span>
+            ))}
             <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-emerald-900/10">
-              Lahiri Sidereal
-            </span>
-            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-emerald-900/10">
-              Astronomy calculation
-            </span>
-            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-emerald-900/10">
-              {trust.regionalNote.split(".")[0]}
+              {String(trust.regionalNote ?? "")
+                .split(".")[0] || "Regional rules visible"}
             </span>
           </div>
         </div>
 
         <p className="mt-2 text-[10px] leading-5 text-stone-500">
-          <strong className="text-stone-700">Why your location matters:</strong>{" "}
-          {trust.calculation} Regional and Sampradaya rules may differ, so DharmYatra keeps the calculation basis visible instead of presenting one tradition as universal.
+          <strong className="text-stone-700">
+            {active === "rashifal"
+              ? "Date context:"
+              : "Why your location matters:"}
+          </strong>{" "}
+          {active === "rashifal"
+            ? "Rashifal is general Rashi-based guidance; the selected location is used to establish the local calendar date."
+            : active === "kundli"
+              ? "Birth place coordinates and timezone are used for the Vedic birth-chart calculation."
+              : `${trust.calculation} Regional and Sampradaya rules may differ, so DharmYatra keeps the calculation basis visible instead of presenting one tradition as universal.`}
         </p>
       </div>
     </div>
@@ -539,34 +702,46 @@ function toValidDate(value: PanchangDateValue): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatTime(value: PanchangDateValue, timeZone: string): string {
+function formatTime(
+  value: PanchangDateValue,
+  timeZone: string,
+): string {
   const date = toValidDate(value);
   if (!date) return "--";
+
   return new Intl.DateTimeFormat("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
-    timeZone,
+    timeZone: getSafeTimeZone(timeZone),
   }).format(date);
 }
 
-function formatDateLabel(value: PanchangDateValue, timeZone: string): string {
+function formatDateLabel(
+  value: PanchangDateValue,
+  timeZone: string,
+): string {
   const date = toValidDate(value);
   if (!date) return "--";
+
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone,
+    timeZone: getSafeTimeZone(timeZone),
   }).format(date);
 }
 
-function formatWeekday(value: PanchangDateValue, timeZone: string): string {
+function formatWeekday(
+  value: PanchangDateValue,
+  timeZone: string,
+): string {
   const date = toValidDate(value);
   if (!date) return "--";
+
   return new Intl.DateTimeFormat("en-IN", {
     weekday: "long",
-    timeZone,
+    timeZone: getSafeTimeZone(timeZone),
   }).format(date);
 }
 
@@ -580,7 +755,7 @@ function getVaraLord(value: PanchangDateValue, timeZone: string): string {
   if (!date) return "--";
   const weekday = new Intl.DateTimeFormat("en-IN", {
     weekday: "long",
-    timeZone,
+    timeZone: getSafeTimeZone(timeZone),
   }).format(date).toLowerCase();
   const map: Record<string, string> = {
     sunday: "Surya",
@@ -615,55 +790,50 @@ function getInauspiciousChoghadiya(panchang: ReturnType<typeof computePanchang>)
 ========================================================= */
 
 function parseISODate(
-  value: string | null,
+  value: string | null | undefined,
 ): Date | null {
-  if (!value) {
+  const normalized = String(value ?? "").trim();
+
+  if (!normalized) {
     return null;
   }
 
   const match =
     /^(\d{4})-(\d{2})-(\d{2})$/.exec(
-      value,
+      normalized,
     );
 
   if (!match) {
     return null;
   }
 
-  const year =
-    Number(match[1]);
-
-  const month =
-    Number(match[2]);
-
-  const day =
-    Number(match[3]);
-
-  const date = new Date(
-    year,
-    month - 1,
-    day,
-    12,
-    0,
-    0,
-    0,
-  );
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
 
   if (
-    Number.isNaN(
-      date.getTime(),
-    )
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
   ) {
     return null;
   }
 
+  const date = createLocalNoonDate(
+    year,
+    month - 1,
+    day,
+  );
+
   if (
-    date.getFullYear() !==
-      year ||
-    date.getMonth() !==
-      month - 1 ||
-    date.getDate() !==
-      day
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
   ) {
     return null;
   }
@@ -674,40 +844,52 @@ function parseISODate(
 function formatDateForQuery(
   date: Date,
 ): string {
+  if (
+    !(date instanceof Date) ||
+    Number.isNaN(date.getTime())
+  ) {
+    return "";
+  }
+
   return [
-    String(
-      date.getFullYear(),
-    ).padStart(4, "0"),
-    String(
-      date.getMonth() + 1,
-    ).padStart(2, "0"),
-    String(
-      date.getDate(),
-    ).padStart(2, "0"),
+    String(date.getFullYear()).padStart(
+      4,
+      "0",
+    ),
+    String(date.getMonth() + 1).padStart(
+      2,
+      "0",
+    ),
+    String(date.getDate()).padStart(
+      2,
+      "0",
+    ),
   ].join("-");
 }
 
 function getDateFromQuery(
   value: string | null,
+  timeZone: string,
 ): Date {
-  const parsed =
-    parseISODate(value);
+  const parsed = parseISODate(value);
 
   if (parsed) {
     return parsed;
   }
 
-  const today =
-    new Date();
-
-  today.setHours(
-    12,
-    0,
-    0,
-    0,
+  const todayKey = getDateKeyInTimeZone(
+    new Date(),
+    timeZone,
   );
 
-  return today;
+  return (
+    parseISODate(todayKey) ??
+    createLocalNoonDate(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate(),
+    )
+  );
 }
 
 /* =========================================================
@@ -960,8 +1142,9 @@ function PanchangView({
       () =>
         getDateFromQuery(
           queryDate,
+          location.timezone,
         ),
-      [queryDate],
+      [location.timezone, queryDate],
     );
 
   const calculation =
@@ -1237,7 +1420,7 @@ function PanchangView({
                     Math.max(
                       0,
                       Number(
-                        p.tithi.pct ??
+                        p.tithi.percentage ??
                           0,
                       ),
                     ),
@@ -1520,32 +1703,30 @@ function createFallbackCalendar(
   month: number,
   location: PanchangLocation,
 ): CalendarPageData {
-  const firstDay =
-    new Date(
-      year,
-      month,
-      1,
-      12,
-      0,
-      0,
-      0,
-    );
+  const firstDay = createLocalNoonDate(
+    year,
+    month,
+    1,
+  );
 
   const firstWeekday =
     firstDay.getDay();
 
   const gridStart =
-    new Date(
+    createLocalNoonDate(
       year,
       month,
       1 - firstWeekday,
-      12,
-      0,
-      0,
-      0,
+    );
+
+  const todayKey =
+    getDateKeyInTimeZone(
+      new Date(),
+      location.timezone,
     );
 
   const today =
+    parseISODate(todayKey) ??
     new Date();
 
   const days: CalendarDayData[] =
@@ -1622,6 +1803,11 @@ function createFallbackCalendar(
         "amavasya",
       );
 
+    const paksha =
+      p?.tithi?.paksha === "Krishna"
+        ? "Krishna"
+        : "Shukla";
+
     const dayData: CalendarDayData =
       {
         dateISO,
@@ -1659,9 +1845,7 @@ function createFallbackCalendar(
               p?.tithi?.index ??
                 0,
             ),
-          paksha:
-            p?.tithi?.paksha ??
-            "Shukla",
+          paksha,
         },
 
         isEkadashi,
@@ -1776,7 +1960,7 @@ function buildSafeCalendar(
     return {
       data: fallback,
       error:
-        "Festival data temporarily unavailable. Basic Panchang calendar is shown.",
+        "Calendar data could not be loaded. A basic Panchang calendar is shown as a fallback.",
     };
   }
 }
@@ -1804,23 +1988,30 @@ function CalendarView({
     path: "/calendar",
   });
 
+  const initialDateKey = useMemo(
+    () =>
+      getDateKeyInTimeZone(
+        new Date(),
+        location.timezone,
+      ),
+    [location.timezone],
+  );
+
   const initialDate =
-    useMemo(
-      () => new Date(),
-      [],
-    );
+    parseISODate(initialDateKey) ??
+    new Date();
 
   const [
     calendarYear,
     setCalendarYear,
-  ] = useState(
+  ] = useState<number>(
     initialDate.getFullYear(),
   );
 
   const [
     calendarMonth,
     setCalendarMonth,
-  ] = useState(
+  ] = useState<number>(
     initialDate.getMonth(),
   );
 
@@ -1875,7 +2066,7 @@ function CalendarView({
       11
     ) {
       setCalendarYear(
-        (current) =>
+        (current: number) =>
           current + 1,
       );
 
@@ -1893,7 +2084,14 @@ function CalendarView({
   };
 
   const goToday = () => {
+    const todayKey =
+      getDateKeyInTimeZone(
+        new Date(),
+        location.timezone,
+      );
+
     const current =
+      parseISODate(todayKey) ??
       new Date();
 
     setCalendarYear(
@@ -2275,6 +2473,21 @@ function CalendarView({
    RASHIFAL VIEW
 ========================================================= */
 
+function formatRashifalRating(
+  value: unknown,
+): string {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return "0.0";
+  }
+
+  return Math.min(
+    5,
+    Math.max(0, numeric),
+  ).toFixed(1);
+}
+
 function RashifalView({
   location,
 }: {
@@ -2297,12 +2510,22 @@ function RashifalView({
     "Mesha",
   );
 
+  const rashifalDateKey = getDateKeyInTimeZone(
+    new Date(),
+    location.timezone,
+  );
+
   const rashifalMap =
     useMemo(() => {
       try {
+        const effectiveRashifalDate =
+          parseISODate(
+            rashifalDateKey,
+          ) ?? new Date();
+
         const results =
           getDailyRashifalBySign(
-            new Date(),
+            effectiveRashifalDate,
           );
 
         if (
@@ -2329,7 +2552,7 @@ function RashifalView({
 
         return new Map();
       }
-    }, []);
+    }, [rashifalDateKey]);
 
   const active =
     rashifalMap.get(
@@ -2444,9 +2667,14 @@ function RashifalView({
               </p>
             </div>
 
-            <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-amber-300">
-              Daily Guidance
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-amber-300">
+                Daily Guidance
+              </span>
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-stone-300">
+                {getLocationLabel(location)}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -2589,8 +2817,9 @@ function RashifalView({
             }
           >
             <p className="font-display text-3xl font-semibold text-[#2a1a10]">
-              {active?.overallRating ??
-                0}
+              {formatRashifalRating(
+                active?.overallRating,
+              )}
               /5
             </p>
 
@@ -2712,52 +2941,6 @@ function RashifalView({
 }
 
 /* =========================================================
-   KUNDLI DATE HELPERS
-========================================================= */
-
-type KundliDateValue = Date | string | number | null | undefined;
-
-function formatKundliDate(
-  value: KundliDateValue,
-): string {
-  if (value === null || value === undefined || value === "") {
-    return "--";
-  }
-
-  const date = value instanceof Date
-    ? value
-    : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "--";
-  }
-
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatKundliDateKey(
-  value: KundliDateValue,
-): string {
-  if (value === null || value === undefined || value === "") {
-    return String(Date.now());
-  }
-
-  const date = value instanceof Date
-    ? value
-    : new Date(value);
-
-  const timestamp = date.getTime();
-
-  return Number.isNaN(timestamp)
-    ? String(value)
-    : String(timestamp);
-}
-
-/* =========================================================
    KUNDLI VIEW
 ========================================================= */
 
@@ -2860,6 +3043,16 @@ function KundliView({
     }
   };
 
+  const maxBirthDate =
+    useMemo(
+      () =>
+        getDateKeyInTimeZone(
+          new Date(),
+          birthLocation.timezone,
+        ),
+      [birthLocation.timezone],
+    );
+
   return (
     <>
       <PageHero
@@ -2913,7 +3106,7 @@ function KundliView({
                   id="birth-name"
                   type="text"
                   value={birthName}
-                  onChange={(event) => setBirthName(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setBirthName(event.target.value)}
                   placeholder="Enter full name"
                   autoComplete="name"
                   className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
@@ -2928,7 +3121,9 @@ function KundliView({
                   id="birth-date"
                   type="date"
                   value={birthDate}
-                  onChange={(event) => setBirthDate(event.target.value)}
+                  max={maxBirthDate || undefined}
+                  autoComplete="bday"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setBirthDate(event.target.value)}
                   required
                   className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
@@ -2942,7 +3137,8 @@ function KundliView({
                   id="birth-time"
                   type="time"
                   value={birthTime}
-                  onChange={(event) => setBirthTime(event.target.value)}
+                  autoComplete="off"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setBirthTime(event.target.value)}
                   required
                   className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
@@ -2955,7 +3151,8 @@ function KundliView({
                 <select
                   id="birth-place"
                   value={birthPlace}
-                  onChange={(event) => setBirthPlace(event.target.value)}
+                  autoComplete="off"
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) => setBirthPlace(event.target.value)}
                   className="w-full rounded-2xl border border-orange-900/10 bg-orange-50/40 px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 >
                   {locations.map((item) => (
@@ -3143,6 +3340,14 @@ export function PanchangPage() {
   const handleLocationChange = (
     nextLocation: PanchangLocation,
   ) => {
+    if (!isUsableLocation(nextLocation)) {
+      console.warn(
+        "Ignoring invalid Panchang location selection.",
+        nextLocation,
+      );
+      return;
+    }
+
     setSelectedLocation(nextLocation);
     persistLocation(nextLocation);
   };

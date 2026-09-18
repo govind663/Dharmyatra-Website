@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/rashifal.ts
 
@@ -25,8 +26,6 @@ import {
 import {
   getCurrentSadeSati,
   getCurrentDhaiya,
-  type SadeSatiAnalysis,
-  type DhaiyaAnalysis,
 } from "./sadhe-sathi";
 
 /* =========================================================
@@ -367,7 +366,7 @@ export function getPanIndiaRashifalLocations(): PanchangLocation[] {
 export function findRashifalLocation(
   query: string,
 ): PanchangLocation | undefined {
-  return findIndiaLocation(query);
+  return findIndiaLocation(query) ?? undefined;
 }
 
 export function getRashifalConfidenceLabel(
@@ -2218,8 +2217,11 @@ function calculateTransitInfluence(
    SADE SATI
 ========================================================= */
 
+type SadeSatiEngineResult = ReturnType<typeof getCurrentSadeSati>;
+type DhaiyaEngineResult = ReturnType<typeof getCurrentDhaiya>;
+
 function buildSadeSatiResult(
-  analysis: SadeSatiAnalysis | null | undefined,
+  analysis: SadeSatiEngineResult | null | undefined,
 ): RashifalSadeSati {
   if (!analysis) {
     return {
@@ -2273,7 +2275,7 @@ function buildSadeSatiResult(
 ========================================================= */
 
 function buildDhaiyaResult(
-  analysis: DhaiyaAnalysis | null | undefined,
+  analysis: DhaiyaEngineResult | null | undefined,
 ): RashifalDhaiya {
   if (!analysis) {
     return {

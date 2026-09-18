@@ -43,12 +43,16 @@ import {
 
 import { waLink } from "../lib/utils";
 
+type PanditDetailRecord = (typeof PANDITS)[number] & {
+  storyVideoId?: string;
+};
+
 export default function PanditDetail() {
   const { slug } = useParams();
 
   const p = PANDITS.find(
     (x) => x.slug === slug,
-  );
+  ) as PanditDetailRecord | undefined;
 
   // ========================================================
   // PANDIT STORY MODAL
@@ -61,34 +65,103 @@ export default function PanditDetail() {
   // SEO
   // ========================================================
 
+  const profilePath = p
+    ? `/pandits/${p.slug}`
+    : `/pandits/${slug ?? ""}`;
+
+  const profileUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${profilePath}`
+      : profilePath;
+
+  const storyVideoId =
+    p?.storyVideoId?.trim() || undefined;
+
+  const seoTitle = p
+    ? `${p.name} | ${p.title} in ${p.location} | DivyaDhara`
+    : "Pandit Not Found | DivyaDhara";
+
+  const seoDescription = p
+    ? `${p.name}, ${p.title} in ${p.location}. ${p.experience} years of experience in ${p.specializations.slice(0, 3).join(", ")}. Book ${p.pujaTypes.slice(0, 4).join(", ")}. Languages: ${p.languages.join(", ")}.`
+    : "The requested Pandit profile could not be found on DivyaDhara.";
+
+  const profileDescription = p
+    ? `${p.name} is a ${p.title} associated with ${p.location}, offering ${p.specializations.join(", ")} and related puja services including ${p.pujaTypes.join(", ")}.`
+    : "";
+
   useSEO({
-    title: p
-      ? `${p.name} — ${p.title} | DivyaDhara Pandits`
-      : "Pandit Not Found",
+    title: seoTitle,
 
-    description: p
-      ? `${p.name}: ${p.experience} yrs, ${p.specializations.join(", ")}. Languages ${p.languages.join(", ")}. Book for ${p.pujaTypes.join(", ")} in ${p.location}.`
-      : "Not found",
+    description: seoDescription,
 
-    path: `/pandits/${slug}`,
+    path: profilePath,
 
     image: p?.photo,
 
     schema: p
       ? {
-          "@context":
-            "https://schema.org",
-
-          "@type":
-            "Person",
-
-          name: p.name,
-
-          jobTitle:
-            "Vedic Pandit",
-
-          address:
-            p.location,
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "ProfilePage",
+              "@id": `${profileUrl}#profile`,
+              url: profileUrl,
+              name: seoTitle,
+              description: profileDescription,
+              mainEntity: {
+                "@id": `${profileUrl}#person`,
+              },
+            },
+            {
+              "@type": "Person",
+              "@id": `${profileUrl}#person`,
+              name: p.name,
+              alternateName: p.title,
+              jobTitle: p.title,
+              description: profileDescription,
+              image: p.photo,
+              url: profileUrl,
+              identifier: p.slug,
+              knowsLanguage: p.languages,
+              knowsAbout: Array.from(
+                new Set([
+                  ...p.specializations,
+                  ...p.pujaTypes,
+                ]),
+              ),
+              areaServed: p.location,
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": `${profileUrl}#breadcrumbs`,
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item:
+                    typeof window !== "undefined"
+                      ? window.location.origin
+                      : "/",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Pandits",
+                  item:
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/pandits`
+                      : "/pandits",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: p.name,
+                  item: profileUrl,
+                },
+              ],
+            },
+          ],
         }
       : undefined,
   });
@@ -162,7 +235,12 @@ export default function PanditDetail() {
 
             <img
               src={p.photo}
-              alt={`Portrait of ${p.name}`}
+              alt={`${p.name} — ${p.title} in ${p.location}`}
+              width={208}
+              height={208}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="h-40 w-40 rounded-[1.75rem] border-4 border-amber-300/70 object-cover shadow-2xl md:h-52 md:w-52"
             />
 
@@ -220,6 +298,13 @@ export default function PanditDetail() {
 
               </div>
 
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-orange-100/90">
+                Book {p.name} for {p.pujaTypes.slice(0, 4).join(", ")} in{" "}
+                {p.location}. Specializations include{" "}
+                {p.specializations.slice(0, 4).join(", ")}. Available in{" "}
+                {p.languages.join(", ")}.
+              </p>
+
               {/* ==================================================
                   ACTION BUTTONS
               ================================================== */}
@@ -254,7 +339,7 @@ export default function PanditDetail() {
                     PANDIT STORY
                 ================================================== */}
 
-                {p.storyVideoId && (
+                {storyVideoId && (
                   <button
                     type="button"
                     onClick={() =>
@@ -528,7 +613,7 @@ export default function PanditDetail() {
       ==================================================== */}
 
       {storyVideoOpen &&
-        p.storyVideoId && (
+        storyVideoId && (
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
             role="dialog"
@@ -600,8 +685,10 @@ export default function PanditDetail() {
                 <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
 
                   <iframe
-                    src={`https://www.youtube.com/embed/${p.storyVideoId}?rel=0&playsinline=1`}
+                    src={`https://www.youtube.com/embed/${storyVideoId}?rel=0&playsinline=1`}
                     title={`Pandit Story — ${p.name}`}
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     className="h-full w-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/kundli/KundliCharts.tsx
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
@@ -302,7 +303,7 @@ function PremiumChartSvg({ chart }: { chart: DivisionalChartData }) {
                     width="108"
                     height="58"
                   >
-                    <div xmlns="http://www.w3.org/1999/xhtml" className="flex flex-wrap items-center justify-center gap-1">
+                    <div className="flex flex-wrap items-center justify-center gap-1">
                       {region.house === 1 && (
                         <span className="rounded-md bg-orange-600 px-1.5 py-0.5 text-[8px] font-black text-white shadow-sm">Lagna</span>
                       )}
@@ -778,7 +779,7 @@ export function PremiumKundliReport({
             </div>
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400">Moon Rashi</p>
-              <p className="mt-1 text-xs font-bold text-stone-700">{safeText(moon?.signHindi)} · {safeText(moon?.sign)}</p>
+              <p className="mt-1 text-xs font-bold text-stone-700">{safeText((moon as unknown as { signHindi?: unknown } | undefined)?.signHindi ?? moon?.sign)} · {safeText(moon?.sign)}</p>
             </div>
           </div>
         </div>
@@ -981,7 +982,7 @@ export function PremiumKundliReport({
         />
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SummaryCard title="Lagna / Ascendant" value={`${safeText(charts.d1.ascendant.signHindi)} · ${safeText(charts.d1.ascendant.sign)}`} sub={`${safeText(charts.d1.ascendant.signEnglish)} · ${formatDegree(charts.d1.ascendant.degreeInSign)}`} icon={<Sun size={15} />} />
+          <SummaryCard title="Lagna / Ascendant" value={`${safeText(charts.d1.ascendant.signHindi)} · ${safeText(charts.d1.ascendant.sign)}`} sub={`${safeText(charts.d1.ascendant.signEnglish)} · ${formatDegree(asFiniteNumber((charts.d1.ascendant as unknown as { degreeInSign?: unknown; degreeInNavamsa?: unknown }).degreeInSign ?? (charts.d1.ascendant as unknown as { degreeInNavamsa?: unknown }).degreeInNavamsa))}`} icon={<Sun size={15} />} />
           <SummaryCard title="D9 Navamsa Lagna" value={`${safeText(charts.d9.ascendant.signHindi)} · ${safeText(charts.d9.ascendant.sign)}`} sub={`${safeText(charts.d9.ascendant.signEnglish)} · Part ${safeText(charts.d9.ascendant.navamsaPart)}`} icon={<Grid3X3 size={15} />} tone="amber" />
           <SummaryCard title="Birth Location" value={safeText(chartData.birth.location?.name)} sub={`${asFiniteNumber(chartData.birth.location?.latitude).toFixed(4)}°N · ${asFiniteNumber(chartData.birth.location?.longitude).toFixed(4)}°E`} icon={<MapPin size={15} />} tone="emerald" />
         </div>

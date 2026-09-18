@@ -2,6 +2,8 @@ import {
   DEFAULT_LOCATION,
   INDIA_LOCATIONS,
   calculatePanchang,
+  getLocalDateParts,
+  validateLocation,
   type IndiaRegion,
   type Panchang,
   type PanchangLocation,
@@ -100,6 +102,7 @@ export const FESTIVAL_REGIONS: IndiaRegion[] = [
   "west",
   "central",
   "north-east",
+  "union-territory",
 ];
 
 export const FESTIVAL_CATEGORIES: FestivalCategory[] = [
@@ -207,6 +210,51 @@ const festivalDateCache =
    DATE VALIDATION
 ========================================================= */
 
+/**
+ * Build a UTC date without the JavaScript Date.UTC() 0-99 year quirk.
+ *
+ * Date.UTC(1, ...) historically treats 1 as 1901. Using setUTCFullYear()
+ * preserves the requested proleptic Gregorian year 1-9999.
+ */
+function createSafeUTCDate(
+  year: number,
+  month0: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0,
+  millisecond = 0,
+): Date {
+  const date = new Date(0);
+  date.setUTCFullYear(year, month0, day);
+  date.setUTCHours(hour, minute, second, millisecond);
+  return date;
+}
+
+/**
+ * Resolve the calendar date represented by an instant in the selected
+ * location's timezone.
+ */
+function getCalendarDatePartsForLocation(
+  date: Date,
+  location: PanchangLocation,
+): {
+  year: number;
+  month0: number;
+  day: number;
+} {
+  const parts = getLocalDateParts(
+    date,
+    location.timezone,
+  );
+
+  return {
+    year: parts.year,
+    month0: parts.month - 1,
+    day: parts.day,
+  };
+}
+
 function assertValidYear(
   year: number,
 ): void {
@@ -241,12 +289,10 @@ function assertValidDay(
   day: number,
 ): void {
   const days =
-    new Date(
-      Date.UTC(
-        year,
-        month0 + 1,
-        0,
-      ),
+    createSafeUTCDate(
+      year,
+      month0 + 1,
+      0,
     ).getUTCDate();
 
   if (
@@ -301,16 +347,14 @@ export function createFestivalDate(
     day,
   );
 
-  return new Date(
-    Date.UTC(
-      year,
-      month0,
-      day,
-      12,
-      0,
-      0,
-      0,
-    ),
+  return createSafeUTCDate(
+    year,
+    month0,
+    day,
+    12,
+    0,
+    0,
+    0,
   );
 }
 
@@ -414,12 +458,10 @@ export function getDaysInMonth(
   assertValidYear(year);
   assertValidMonth(month0);
 
-  return new Date(
-    Date.UTC(
-      year,
-      month0 + 1,
-      0,
-    ),
+  return createSafeUTCDate(
+    year,
+    month0 + 1,
+    0,
   ).getUTCDate();
 }
 
@@ -447,10 +489,15 @@ function normalizeLocationKey(
   location: PanchangLocation,
 ): string {
   return [
-    location.id ??
-      location.name,
+    location.id,
     location.name,
+    location.city,
+    location.state,
+    location.country,
     location.region,
+    Number(location.latitude).toFixed(6),
+    Number(location.longitude).toFixed(6),
+    location.timezone,
   ]
     .map(
       (value) =>
@@ -602,6 +649,16 @@ function createFestival(
   const normalizedTitle =
     normalizeText(title);
 
+  if (!normalizedTitle) {
+    throw new TypeError(
+      "Festival title cannot be empty.",
+    );
+  }
+
+  parseFestivalDateISO(
+    dateISO,
+  );
+
   const slug =
     normalizedTitle
       .replace(
@@ -638,7 +695,11 @@ function createFestival(
   }
 
   if (!festival.confidence) {
-    festival.confidence = festival.requiresExactRule ? "candidate" : "high";
+    festival.confidence = festival.requiresExactRule
+      ? "candidate"
+      : festival.isTithiBased || festival.isSolarBased
+        ? "medium"
+        : "high";
   }
 
   festival.trustNote =
@@ -701,6 +762,90 @@ function isMonthBetween(
     month0 >= start &&
     month0 <= end
   );
+}
+
+/* =========================================================
+   PANCHANG-DERIVED SOLAR FESTIVALS
+========================================================= */
+
+/**
+ * Build solar-ingress festival markers from the selected location.
+ *
+ * This is intentionally used for Sankranti because a fixed Gregorian date
+ * is only an approximation; the actual solar ingress can occur on a
+ * different local calendar date.
+ */
+function getPanchangDerivedSolarFestivals(
+  dateISO: string,
+  panchang: Panchang,
+  location: PanchangLocation,
+): Festival[] {
+  const ingress = panchang.solarSign?.ingress;
+
+  if (!ingress) {
+    return [];
+  }
+
+  const ingressParts =
+    getCalendarDatePartsForLocation(
+      ingress,
+      location,
+    );
+
+  const ingressISO =
+    getFestivalDateISO(
+      ingressParts.year,
+      ingressParts.month0,
+      ingressParts.day,
+    );
+
+  if (ingressISO !== dateISO) {
+    return [];
+  }
+
+  const signName =
+    String(
+      panchang.solarSign.name ?? "",
+    ).trim();
+
+  if (!signName) {
+    return [];
+  }
+
+  const signNameNormalized =
+    normalizeText(signName);
+
+  const title =
+    signNameNormalized === "makara"
+      ? "Makar Sankranti"
+      : `${signName} Sankranti`;
+
+  const isMakar =
+    signNameNormalized === "makara";
+
+  return [
+    createFestival(
+      dateISO,
+      title,
+      "sankranti",
+      isMakar ? "major" : "important",
+      {
+        shortTitle: title,
+        description:
+          `Solar ingress into ${signName} using the selected location's Panchang calculation.`,
+        badge: "Sankranti",
+        isSolarBased: true,
+        requiresExactRule: false,
+        confidence: "high",
+        observanceBasis: "panchang-derived",
+        trustNote:
+          `${FESTIVAL_TRUST_NOTE} Solar ingress is taken from the selected location's Panchang calculation.`,
+        city:
+          location.city ??
+          location.name,
+      },
+    ),
+  ];
 }
 
 /* =========================================================
@@ -923,31 +1068,6 @@ function getSolarFestivals(
 
   const festivals: Festival[] =
     [];
-
-  if (
-    month0 === 0 &&
-    day === 14
-  ) {
-    festivals.push(
-      createFestival(
-        dateISO,
-        "Makar Sankranti",
-        "sankranti",
-        "major",
-        {
-          shortTitle:
-            "Makar Sankranti",
-          description:
-            "Solar transition into Makara and harvest observance across India.",
-          badge:
-            "Sankranti",
-          isSolarBased: true,
-          requiresExactRule:
-            true,
-        },
-      ),
-    );
-  }
 
   if (
     month0 === 0 &&
@@ -2670,6 +2790,35 @@ function mergeFestivalRecords(
       incomingRank
         ? existing.importance
         : incoming.importance,
+
+    confidence:
+      existing.confidence === "candidate" ||
+      incoming.confidence === "candidate"
+        ? "candidate"
+        : existing.confidence === "medium" ||
+            incoming.confidence === "medium"
+          ? "medium"
+          : existing.confidence ?? incoming.confidence,
+
+    observanceBasis:
+      preferred.observanceBasis ??
+      existing.observanceBasis ??
+      incoming.observanceBasis,
+
+    trustNote:
+      preferred.trustNote ??
+      existing.trustNote ??
+      incoming.trustNote,
+
+    relevance:
+      preferred.relevance ??
+      existing.relevance ??
+      incoming.relevance,
+
+    relevanceReason:
+      preferred.relevanceReason ??
+      existing.relevanceReason ??
+      incoming.relevanceReason,
   };
 }
 
@@ -2773,14 +2922,17 @@ export function getFestivalsForDate(
     );
   }
 
-  const year =
-    date.getUTCFullYear();
+  validateLocation(location);
 
-  const month0 =
-    date.getUTCMonth();
-
-  const day =
-    date.getUTCDate();
+  const {
+    year,
+    month0,
+    day,
+  } =
+    getCalendarDatePartsForLocation(
+      date,
+      location,
+    );
 
   assertValidDateParts(
     year,
@@ -2832,6 +2984,14 @@ export function getFestivalsForDate(
       year,
       month0,
       day,
+    ),
+  );
+
+  festivals.push(
+    ...getPanchangDerivedSolarFestivals(
+      dateISO,
+      panchang,
+      location,
     ),
   );
 
@@ -2930,6 +3090,7 @@ export function getFestivalsForMonth(
 ): Festival[] {
   assertValidYear(year);
   assertValidMonth(month0);
+  validateLocation(location);
 
   const days =
     getDaysInMonth(
@@ -2972,6 +3133,7 @@ export function getFestivalsForYear(
     DEFAULT_LOCATION,
 ): Festival[] {
   assertValidYear(year);
+  validateLocation(location);
 
   const festivals: Festival[] =
     [];
@@ -3085,6 +3247,14 @@ export function getFestivalsByState(
     return [];
   }
 
+  const normalizedState =
+    normalizeIndiaState(state);
+
+  const targetState =
+    normalizedState
+      ? normalizeText(normalizedState)
+      : normalized;
+
   return getFestivalsForMonth(
     year,
     month0,
@@ -3092,13 +3262,15 @@ export function getFestivalsByState(
   ).filter(
     (festival) =>
       festival.states?.some(
-        (item) =>
-          normalizeText(
-            item,
-          ).includes(
-            normalized,
-          ),
-      ),
+        (item) => {
+          const itemState =
+            normalizeIndiaState(item);
+
+          return normalizeText(
+            itemState ?? item,
+          ) === targetState;
+        },
+      ) ?? false,
   );
 }
 
@@ -3126,6 +3298,10 @@ export function filterFestivals(
   festivals: Festival[],
   options?: FestivalFilterOptions,
 ): Festival[] {
+  if (!Array.isArray(festivals) || festivals.length === 0) {
+    return [];
+  }
+
   if (!options) {
     return [
       ...festivals,
@@ -3340,6 +3516,9 @@ export function getFestivalSummary(
   regional: number;
   vrat: number;
   sankranti: number;
+  religious: number;
+  seasonal: number;
+  observance: number;
 } {
   const festivals =
     getFestivalsForMonth(
@@ -3392,6 +3571,27 @@ export function getFestivalSummary(
           festival.category ===
           "sankranti",
       ).length,
+
+    religious:
+      festivals.filter(
+        (festival) =>
+          festival.category ===
+          "religious",
+      ).length,
+
+    seasonal:
+      festivals.filter(
+        (festival) =>
+          festival.category ===
+          "seasonal",
+      ).length,
+
+    observance:
+      festivals.filter(
+        (festival) =>
+          festival.category ===
+          "observance",
+      ).length,
   };
 }
 
@@ -3402,15 +3602,35 @@ export function getFestivalSummary(
 export function resolveFestivalLocation(
   cityId?: string,
 ): PanchangLocation {
+  const key =
+    typeof cityId === "string"
+      ? cityId.trim()
+      : "";
+
   if (
-    cityId &&
-    INDIA_LOCATIONS[
-      cityId
-    ]
+    key &&
+    INDIA_LOCATIONS[key]
   ) {
-    return INDIA_LOCATIONS[
-      cityId
-    ];
+    return INDIA_LOCATIONS[key];
+  }
+
+  const normalizedKey =
+    normalizeText(key);
+
+  if (normalizedKey) {
+    const matched =
+      Object.values(
+        INDIA_LOCATIONS,
+      ).find(
+        (location) =>
+          normalizeText(location.id) === normalizedKey ||
+          normalizeText(location.name) === normalizedKey ||
+          normalizeText(location.city) === normalizedKey,
+      );
+
+    if (matched) {
+      return matched;
+    }
   }
 
   return DEFAULT_LOCATION;
@@ -3459,18 +3679,27 @@ export function getFestivalDateDetails(
       dateISO,
     );
 
+  validateLocation(location);
+
+  const date =
+    createFestivalDate(
+      year,
+      month0,
+      day,
+    );
+
+  const panchang =
+    calculatePanchang(
+      date,
+      location,
+    );
+
   return {
     dateISO,
-
-    panchang:
-      calculatePanchang(
-        createFestivalDate(year, month0, day),
-        location,
-      ),
-
+    panchang,
     festivals:
-      getFestivalsForDateISO(
-        dateISO,
+      getFestivalsForDate(
+        date,
         location,
       ),
   };
@@ -3929,6 +4158,11 @@ export type FestivalCalendarEvent = {
   location?: string;
   isMajor?: boolean;
   badge?: string;
+  confidence?: Festival["confidence"];
+  observanceBasis?: Festival["observanceBasis"];
+  trustNote?: string;
+  relevance?: Festival["relevance"];
+  relevanceReason?: string;
 };
 
 export function festivalsToCalendarEvents(
@@ -3998,6 +4232,21 @@ export function festivalsToCalendarEvents(
 
           badge:
             festival.badge,
+
+          confidence:
+            festival.confidence,
+
+          observanceBasis:
+            festival.observanceBasis,
+
+          trustNote:
+            festival.trustNote,
+
+          relevance:
+            festival.relevance,
+
+          relevanceReason:
+            festival.relevanceReason,
         };
       },
     )
@@ -4071,6 +4320,8 @@ export function getPersonalizedFestivals(
   month0: number,
   location: PanchangLocation = DEFAULT_LOCATION,
 ): Festival[] {
+  validateLocation(location);
+
   const state = normalizeIndiaState(
     (location as PanchangLocation & { state?: string }).state,
   );
@@ -4079,26 +4330,45 @@ export function getPersonalizedFestivals(
     .map((festival) => {
       const festivalStates = festival.states ?? [];
       const stateMatch = !!state && festivalStates.some(
-        (item) => normalizeText(item) === normalizeText(state),
+        (item) => {
+          const normalizedFestivalState =
+            normalizeIndiaState(item);
+          return normalizeText(
+            normalizedFestivalState ?? item,
+          ) === normalizeText(
+            state,
+          );
+        },
       );
-      const regionMatch = !!festival.region &&
+
+      const locationCity =
+        location.city ??
+        location.name;
+
+      const cityMatch =
+        !!festival.city &&
+        !!locationCity &&
+        normalizeText(festival.city) ===
+          normalizeText(locationCity);
+
+      const regionMatch =
+        !!festival.region &&
         festival.region === location.region;
 
       const relevance: Festival["relevance"] =
+        cityMatch ? "city" :
         stateMatch ? "state" :
         regionMatch ? "regional" :
-        festival.category === "pan-india" || festival.category === "national"
+        festival.category === "pan-india" ||
+            festival.category === "national"
           ? "pan-india"
-          : festival.city && location.name &&
-            normalizeText(festival.city) === normalizeText(location.name)
-            ? "city"
-            : "pan-india";
+          : "pan-india";
 
       const relevanceReason =
         stateMatch
           ? `Relevant to ${state}.`
           : regionMatch
-            ? `Relevant to the ${location.region} region.`
+            ? `Relevant to the ${location.region ?? "selected"} region.`
             : relevance === "pan-india"
               ? "Shown as a national or broadly observed Indian festival."
               : `Relevant to ${location.name}.`;
@@ -4125,13 +4395,36 @@ export function getPersonalizedFestivals(
 export function getFestivalPersonalizationMessage(
   location: PanchangLocation = DEFAULT_LOCATION,
 ): string {
-  return `Showing festivals for ${location.name}. Sunrise, sunset and Panchang-derived observances use this selected location. Local temple and community traditions may differ.`;
+  validateLocation(location);
+
+  const label =
+    [
+      location.city ?? location.name,
+      location.state,
+      location.country,
+    ]
+      .filter(
+        (value): value is string =>
+          typeof value === "string" &&
+          value.trim().length > 0,
+      )
+      .join(", ");
+
+  return `Showing festivals for ${label || "the selected Indian location"}. Sunrise, sunset and Panchang-derived observances use this selected location. Local temple, sampradaya and community traditions may differ.`;
 }
 
 export function isFestivalExact(
   festival: Festival,
 ): boolean {
-  return festival.requiresExactRule !== true;
+  return (
+    festival.requiresExactRule !== true &&
+    festival.confidence === "high" &&
+    (
+      festival.observanceBasis === "fixed-date" ||
+      festival.observanceBasis === "panchang-derived" ||
+      festival.observanceBasis === "solar"
+    )
+  );
 }
 
 export function getFestivalConfidenceLabel(

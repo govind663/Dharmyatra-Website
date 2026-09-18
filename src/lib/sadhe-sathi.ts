@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * ============================================================================
  * DHARMYATRA - VEDIC ASTROLOGY
@@ -48,7 +49,6 @@ import {
   type NakshatraName,
   type ZodiacEnglishSign,
   type ZodiacSign,
-  type PanchangLocation,
   calculateCurrentDhaiya,
   calculateCurrentSadeSati,
   calculateDhaiya,
@@ -62,6 +62,7 @@ import {
   getPanIndiaAstrologyLocations,
   findAstrologyLocation,
 } from "./astrology";
+import type { PanchangLocation } from "./panchang";
 
 /* ============================================================================
  * TYPES

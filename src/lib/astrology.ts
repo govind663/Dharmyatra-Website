@@ -10,6 +10,10 @@ import {
   type PanchangLocation,
 } from "./panchang";
 
+// Backward-compatible type export for modules that historically imported
+// PanchangLocation from this shared astrology layer.
+export type { PanchangLocation } from "./panchang";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -116,6 +120,8 @@ export interface PlanetPosition {
 
   sign: ZodiacSign;
   signEnglish: ZodiacEnglishSign;
+  /** Hindi display name for the current sign. */
+  signHindi: string;
 
   /** Degree inside the current sign, 0–<30. */
   degreeInSign: number;
@@ -143,10 +149,10 @@ export interface PlanetPosition {
 }
 
 export interface AscendantPosition {
-  [x: string]: any;
   longitude: number;
   sign: ZodiacSign;
   signEnglish: ZodiacEnglishSign;
+  signHindi: string;
   degreeInSign: number;
   nakshatra: NakshatraName;
   nakshatraIndex: number;
@@ -1182,6 +1188,9 @@ export function getPlanetPosition(
 
     signEnglish,
 
+    signHindi:
+      getRashiNameHindi(sign),
+
     degreeInSign,
 
     // Compatibility alias.
@@ -1411,6 +1420,11 @@ export function getAscendantPosition(
     signEnglish:
       getEnglishZodiacSignFromLongitude(
         longitude,
+      ),
+
+    signHindi:
+      getRashiNameHindi(
+        getZodiacSignFromLongitude(longitude),
       ),
 
     degreeInSign:

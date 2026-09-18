@@ -4,6 +4,8 @@ import {
   DEFAULT_LOCATION,
   getIndiaLocations,
   findIndiaLocation,
+  getLocalDateParts,
+  zonedTimeToUtc,
   type PanchangLocation,
 } from "./panchang";
 
@@ -349,18 +351,59 @@ function isFiniteNumber(
    DATE VALIDATION
 ========================================================= */
 
-export function isValidBirthDate(
+function parseBirthCalendarDate(
   value: Date | string | number,
-): boolean {
+  timezone = DEFAULT_LOCATION.timezone,
+): { year: number; month: number; day: number } | null {
+  if (typeof value === "string") {
+    const normalized = normalizeString(value);
+
+    // HTML date input / ISO calendar date: preserve the entered calendar day.
+    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(normalized);
+    if (dateOnlyMatch) {
+      const year = Number(dateOnlyMatch[1]);
+      const month = Number(dateOnlyMatch[2]);
+      const day = Number(dateOnlyMatch[3]);
+
+      const probe = new Date(Date.UTC(year, month - 1, day));
+      if (
+        probe.getUTCFullYear() !== year ||
+        probe.getUTCMonth() !== month - 1 ||
+        probe.getUTCDate() !== day
+      ) {
+        return null;
+      }
+
+      return { year, month, day };
+    }
+  }
+
   const date =
     value instanceof Date
       ? new Date(value.getTime())
       : new Date(value);
 
-  return (
-    !Number.isNaN(date.getTime()) &&
-    Number.isFinite(date.getTime())
-  );
+  if (
+    Number.isNaN(date.getTime()) ||
+    !Number.isFinite(date.getTime())
+  ) {
+    return null;
+  }
+
+  const parts = getLocalDateParts(date, timezone);
+
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+  };
+}
+
+export function isValidBirthDate(
+  value: Date | string | number,
+  timezone = DEFAULT_LOCATION.timezone,
+): boolean {
+  return parseBirthCalendarDate(value, timezone) !== null;
 }
 
 export function isValidBirthTime(
@@ -388,14 +431,30 @@ export function isValidKundliLocation(
     return false;
   }
 
-  return (
-    isFiniteNumber(location.latitude) &&
-    location.latitude >= -90 &&
-    location.latitude <= 90 &&
-    isFiniteNumber(location.longitude) &&
-    location.longitude >= -180 &&
-    location.longitude <= 180
-  );
+  if (
+    !isFiniteNumber(location.latitude) ||
+    location.latitude < -90 ||
+    location.latitude > 90 ||
+    !isFiniteNumber(location.longitude) ||
+    location.longitude < -180 ||
+    location.longitude > 180
+  ) {
+    return false;
+  }
+
+  const timezone = normalizeString(location.timezone);
+  if (!timezone) {
+    return false;
+  }
+
+  try {
+    // Validate that the supplied IANA timezone is recognized by the runtime.
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 /* =========================================================
@@ -478,65 +537,89 @@ export function validateBirthDetails(
  * Converts the supplied birth date and optional birth time
  * into a JavaScript Date instance.
  *
- * IMPORTANT:
- * The application currently relies on the browser/runtime
- * timezone when combining a calendar date with HH:mm.
- *
- * For exact historical timezone/DST calculations, the
- * Panchang/Astrology engine should eventually accept an
- * explicit IANA timezone from PanchangLocation.
+ * The selected location timezone is used when combining the
+ * entered calendar date and HH:mm, so the astronomical engine
+ * receives the intended instant for that place.
  */
 function parseBirthDateTime(
   birthDate: Date | string | number,
   birthTime?: string,
+  timezone = DEFAULT_LOCATION.timezone,
 ): Date {
-  const date =
-    birthDate instanceof Date
-      ? new Date(birthDate.getTime())
-      : new Date(birthDate);
+  const calendar = parseBirthCalendarDate(
+    birthDate,
+    timezone,
+  );
 
-  if (
-    Number.isNaN(date.getTime()) ||
-    !Number.isFinite(date.getTime())
-  ) {
-    throw new Error(
-      "Invalid birth date.",
-    );
+  if (!calendar) {
+    throw new Error("Invalid birth date.");
   }
 
   if (!birthTime) {
-    return date;
+    return zonedTimeToUtc(
+      calendar.year,
+      calendar.month,
+      calendar.day,
+      0,
+      0,
+      0,
+      timezone,
+    );
   }
 
   const normalizedTime =
     normalizeString(birthTime);
 
-  if (
-    !isValidBirthTime(normalizedTime)
-  ) {
+  if (!isValidBirthTime(normalizedTime)) {
     throw new Error(
       "Invalid birth time. Expected HH:mm.",
     );
   }
 
-  const [
-    hours,
-    minutes,
-  ] = normalizedTime
-    .split(":")
-    .map(Number);
+  const [hours, minutes] =
+    normalizedTime.split(":").map(Number);
 
-  const result =
-    new Date(date.getTime());
-
-  result.setHours(
+  return zonedTimeToUtc(
+    calendar.year,
+    calendar.month,
+    calendar.day,
     hours,
     minutes,
     0,
-    0,
+    timezone,
   );
+}
 
-  return result;
+function formatBirthDateInTimezone(
+  date: Date,
+  timezone: string,
+): string {
+  const parts = getLocalDateParts(date, timezone);
+
+  return `${parts.year.toString().padStart(4, "0")}-${parts.month
+    .toString()
+    .padStart(2, "0")}-${parts.day
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+function formatBirthTimeInTimezone(
+  date: Date,
+  timezone: string,
+): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const hour =
+    parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute =
+    parts.find((part) => part.type === "minute")?.value ?? "00";
+
+  return `${hour}:${minute}`;
 }
 
 /**
@@ -1048,10 +1131,14 @@ export function buildKundli(
     );
   }
 
+  const timezone =
+    location.timezone || DEFAULT_LOCATION.timezone;
+
   const birthDateTime =
     parseBirthDateTime(
       input.birthDate,
       input.birthTime,
+      timezone,
     );
 
   const birth: BirthDetails = {
@@ -1061,8 +1148,9 @@ export function buildKundli(
       ) || undefined,
 
     date:
-      formatBirthDate(
+      formatBirthDateInTimezone(
         birthDateTime,
+        timezone,
       ),
 
     time:
@@ -1070,8 +1158,9 @@ export function buildKundli(
         ? normalizeString(
             input.birthTime,
           )
-        : formatBirthTime(
+        : formatBirthTimeInTimezone(
             birthDateTime,
+            timezone,
           ),
 
     location,
@@ -1204,11 +1293,13 @@ export function getBirthPlanetPosition(
   >,
   birthDate: Date | string | number,
   birthTime?: string,
+  timezone = DEFAULT_LOCATION.timezone,
 ): PlanetPosition {
   const date =
     parseBirthDateTime(
       birthDate,
       birthTime,
+      timezone,
     );
 
   return getPlanetPosition(
@@ -1224,11 +1315,13 @@ export function getBirthPlanetPosition(
 export function getBirthPlanetPositions(
   birthDate: Date | string | number,
   birthTime?: string,
+  timezone = DEFAULT_LOCATION.timezone,
 ): PlanetPosition[] {
   const date =
     parseBirthDateTime(
       birthDate,
       birthTime,
+      timezone,
     );
 
   return KUNDLI_PLANETS.map(
@@ -1768,6 +1861,10 @@ export function normalizeKundliLocation(
 export function normalizeKundliInput(
   input: KundliInput,
 ): KundliInput {
+  if (!input || typeof input !== "object") {
+    throw new Error("Kundli input is required.");
+  }
+
   return {
     name:
       normalizeString(
@@ -1880,10 +1977,12 @@ export function tryBuildKundli(
 export function getBirthDateTime(
   birthDate: Date | string | number,
   birthTime?: string,
+  timezone = DEFAULT_LOCATION.timezone,
 ): Date {
   return parseBirthDateTime(
     birthDate,
     birthTime,
+    timezone,
   );
 }
 
@@ -1940,8 +2039,14 @@ function getKundliConfidence(
   birthTime?: string,
   location?: PanchangLocation,
 ): "high" | "medium" | "limited" {
-  if (!location) return "limited";
-  if (!birthTime || !isValidBirthTime(birthTime)) return "limited";
+  if (!location || !isValidKundliLocation(location)) {
+    return "limited";
+  }
+
+  if (!birthTime || !isValidBirthTime(birthTime)) {
+    return "limited";
+  }
+
   return "high";
 }
 

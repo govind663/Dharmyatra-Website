@@ -32,6 +32,12 @@ export interface DivisionalPlanetPosition {
 
 export interface DivisionalAscendantPosition {
   longitude: number;
+  /**
+   * Degree within the source natal sign (0 <= value < 30).
+   * Kept separate from degreeInNavamsa for compatibility with
+   * DivisionalPlanetPosition and KundliCharts consumers.
+   */
+  degreeInSign: number;
   sourceSign: ZodiacSign;
   sign: ZodiacSign;
   signEnglish: ZodiacEnglishSign;
@@ -129,6 +135,7 @@ function createDivisionalAscendant(chart: KundliChartData["chart"]): DivisionalA
   const sign = getNavamsaSign(source.sign, source.degreeInSign);
   return {
     longitude: source.longitude,
+    degreeInSign: source.degreeInSign,
     sourceSign: source.sign,
     sign,
     signEnglish: getRashiNameEnglish(sign),
@@ -189,6 +196,7 @@ export function buildNavamsaChart(chart: KundliChartData["chart"]): DivisionalCh
 export function buildLagnaChart(chart: KundliChartData["chart"]): DivisionalChartData {
   const ascendant: DivisionalAscendantPosition = {
     longitude: chart.ascendant.longitude,
+    degreeInSign: chart.ascendant.degreeInSign,
     sourceSign: chart.ascendant.sign,
     sign: chart.ascendant.sign,
     signEnglish: chart.ascendant.signEnglish,

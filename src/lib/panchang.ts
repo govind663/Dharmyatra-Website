@@ -89,7 +89,6 @@ export interface PanchangDateRange {
 }
 
 export interface TithiResult {
-  [x: string]: number;
   index: number;
   number: number;
   name: string;
@@ -259,7 +258,6 @@ export interface FestivalMarker {
 }
 
 export interface Panchang {
-  sunrise: any;
   date: Date;
   location: PanchangLocation;
 
@@ -3854,6 +3852,9 @@ export function calculatePanchang(
   return {
     date: cloneDate(date),
     location: safeLocation,
+
+    // Backward-compatible alias for older consumers.
+    sunrise: solar.sunrise,
 
     solar,
     lunar,
