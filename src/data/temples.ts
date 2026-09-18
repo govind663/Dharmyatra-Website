@@ -4,6 +4,7 @@
  * Master temple catalogue:
  * - 12 Jyotirlingas
  * - 51 Shakti Peethas (traditional 51-Peetha compilation)
+ * - Dynamic deep SEO for every temple: area → city → district → state
  *
  * Important:
  * 1. Shakti Peetha traditions vary by text and sampradaya. Where identifications differ,
@@ -11,6 +12,26 @@
  * 2. Darshan, aarti, booking, seasonal opening and festival dates are dynamic.
  * 3. Devotional legends are presented as sacred tradition, not as archaeological certainty.
  */
+
+export type TempleSEO = {
+  /**
+   * Dynamic, per-temple SEO metadata derived from this record.
+   * No new factual claims are generated here.
+   */
+  title: string;
+  description: string;
+  canonicalPath: string;
+  ogTitle: string;
+  ogDescription: string;
+  keywords: string[];
+  primaryKeywords: string[];
+  locationKeywords: string[];
+  longTailKeywords: string[];
+  area: string;
+  locationLabel: string;
+  searchIntents: string[];
+  schema: Record<string, unknown>;
+};
 
 export type TempleSource = {
   title: string;
@@ -87,13 +108,67 @@ export type Temple = {
   nearby: string[];
   mapEmbedNote: string;
 
-  liveAarti?: {
-    title: string;
-    time: string;
-  };
+  /**
+   * YouTube video ID used for the Temple Story modal.
+   * Keep empty until a specific story/history video is selected.
+   */
+  storyVideoId?: string;
 
-  sources?: TempleSource[];
-  contentNote?: string;
+  /**
+   * Live Aarti / Live Darshan configuration.
+   *
+   * `enabled` controls whether the live section should be rendered.
+   * Do not mark a stream as enabled until an official/authorized source
+   * has been configured.
+   *
+   * YouTube:
+   *   videoId = the current live broadcast/video ID.
+   *
+   * HLS:
+   *   streamUrl = direct .m3u8 stream URL.
+   *
+   * External:
+   *   watchUrl = official temple live-darshan page.
+   */
+  liveAarti?: {
+    enabled: boolean;
+
+    provider:
+      | "youtube"
+      | "youtube-channel"
+      | "hls"
+      | "ipcamlive"
+      | "external";
+
+    // Fixed YouTube video / live broadcast ID
+    videoId?: string;
+
+    // Official YouTube channel ID
+    channelId?: string;
+
+    // Direct HLS stream URL (.m3u8)
+    streamUrl?: string;
+
+    // IPCamLive player URL / camera stream URL
+    ipcamliveUrl?: string;
+
+    // Official external live page / YouTube live URL
+    watchUrl?: string;
+
+    title: string;
+
+    time: string;
+
+    // Verified official / authorized source
+    isOfficial?: boolean;
+    };
+
+sources?: TempleSource[];
+
+contentNote?: string;
+
+  // Dynamic deep SEO metadata generated from the temple record.
+  seo?: TempleSEO;
 };
 
 export const TEMPLE_DATA: Temple[] = [
@@ -261,9 +336,21 @@ export const TEMPLE_DATA: Temple[] = [
       "Sankat Mochan Hanuman Temple (6 km)",
     ],
     mapEmbedNote: "Vishwanath Gali, Varanasi, Uttar Pradesh 221001",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "fDGkQvDwx80",
     liveAarti: {
+      enabled: true,
+      provider: "youtube",
       title: "Live: Saptarishi Aarti — Kashi Vishwanath",
       time: "Daily · 7:00 PM IST",
+      isOfficial: true,
+      // Add the current official YouTube live broadcast ID here.
+      // Example: videoId: "XXXXXXXXXXX",
+      videoId: "WPZ0xL0-sKs",
     },
   },
   {
@@ -401,9 +488,21 @@ export const TEMPLE_DATA: Temple[] = [
       "Gandhi Memorial Museum (3 km)",
     ],
     mapEmbedNote: "Madurai Main, Tamil Nadu 625001",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "lnUU-GbXxaA",
     liveAarti: {
+      enabled: true,
+      provider: "youtube",
       title: "Live: Arthajama Pooja — Madurai",
       time: "Daily · 9:30 PM IST",
+      isOfficial: true,
+      // Add the current official YouTube live broadcast ID here.
+      // Example: videoId: "XXXXXXXXXXX",
+      videoId: "DJsHe1tDpg8",
     },
   },
   {
@@ -548,9 +647,21 @@ export const TEMPLE_DATA: Temple[] = [
       "Ukhimath winter seat (60 km)",
     ],
     mapEmbedNote: "Kedarnath, Rudraprayag, Uttarakhand 246445",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "OjS6oWvbrjE",
     liveAarti: {
+      enabled: true,
+      provider: "youtube",
       title: "Live: Sandhya Aarti — Kedarnath",
       time: "In season · 6:30 PM IST",
+      isOfficial: true,
+      // Kedarnath is seasonal; enable only when the official live source
+      // is available for the current pilgrimage season.
+      videoId: "v1cXV2ur4w0",
     },
   },
   {
@@ -676,9 +787,21 @@ export const TEMPLE_DATA: Temple[] = [
       "Sandipani Ashram (5 km)",
     ],
     mapEmbedNote: "Ujjain, Madhya Pradesh 456006",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "3P-Xz0MMxw8",
     liveAarti: {
+      enabled: true,
+      provider: "youtube",
       title: "Live: Bhasma Aarti — Mahakaal",
       time: "Daily · 4:00 AM IST",
+      isOfficial: true,
+      // Add the current official YouTube live broadcast ID here.
+      // Example: videoId: "XXXXXXXXXXX",
+      videoId: "zMkpf00pTB8",
     },
   },
   {
@@ -764,7 +887,8 @@ export const TEMPLE_DATA: Temple[] = [
         time: "Evening",
         desc: "Dusk lamps at the Lion's Gate and sanctum.",
       },
-    ],
+    ],    
+
     festivals: [
       {
         name: "Rath Yatra",
@@ -807,6 +931,26 @@ export const TEMPLE_DATA: Temple[] = [
       "Chilika Lake (50 km)",
     ],
     mapEmbedNote: "Grand Road, Puri, Odisha 752001",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "FjbzOjA5ZNw",
+
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",      
+      title: "Live Darshan — Shree Jagannath Temple, Puri",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      // Add the current official YouTube live broadcast ID here.
+      // Example: videoId: "XXXXXXXXXXX",
+      videoId: "_pplsMPNVmQ",
+    },
   },
   {
     slug: "somnath-gujarat",
@@ -882,7 +1026,8 @@ export const TEMPLE_DATA: Temple[] = [
         time: "7 AM · 12 PM · 7 PM",
         desc: "Three daily aartis with Somnath Ashtakam.",
       },
-    ],
+    ],    
+
     festivals: [
       {
         name: "Mahashivratri",
@@ -920,6 +1065,26 @@ export const TEMPLE_DATA: Temple[] = [
       "Gir National Park (45 km)",
     ],
     mapEmbedNote: "Prabhas Patan, Gujarat 362268",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "DYHObfMLZPc",
+
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shree Somnath Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      // Add the current official/authorized YouTube live broadcast ID here.
+      // Example: videoId: "XXXXXXXXXXX",
+      videoId: "jL1I_J2_cOw",
+    },
   },
   {
     slug: "tirupati-balaji",
@@ -1053,6 +1218,23 @@ export const TEMPLE_DATA: Temple[] = [
       "Chandragiri Fort (20 km)",
     ],
     mapEmbedNote: "Tirumala, Andhra Pradesh 517504",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "Brv9gRYyJCA",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Sri Venkateswara Temple, Tirumala",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      videoId: "XxdarKTmJ8c",
+    },
   },
   {
     slug: "rameshwaram-jyotirlinga",
@@ -1179,6 +1361,22 @@ export const TEMPLE_DATA: Temple[] = [
       "APJ Abdul Kalam Memorial",
     ],
     mapEmbedNote: "Rameshwaram, Tamil Nadu 623526",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "txr3FbmoBKs",
+
+    liveAarti: {
+      enabled: true,
+      provider: "youtube-channel",
+      channelId: "YOUR_YOUTUBE_CHANNEL_ID",
+      watchUrl: "https://www.youtube.com/@ramanathaswamytemple/live",
+      title: "Live Darshan — Shri Ramanathaswamy Temple",
+      time: "Live during selected sevas & special poojas",
+      isOfficial: true,
+    },
   },
 
   {
@@ -1301,8 +1499,26 @@ export const TEMPLE_DATA: Temple[] = [
       "Sakshi Ganapati Temple",
     ],
     mapEmbedNote: "Srisailam, Nandyal district, Andhra Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "5Kypoy_EkYA",
     contentNote:
       "Legendary elements are presented as sacred temple tradition. Seva timings and access should be checked with Srisaila Devasthanam.",
+    
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shri Mallikarjuna Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: false,
+      videoId: "f-pPN_NoOFw",
+    },
   },
   {
     slug: "omkareshwar-madhya-pradesh",
@@ -1428,8 +1644,25 @@ export const TEMPLE_DATA: Temple[] = [
       "Kajal Rani Cave / local Narmada viewpoints",
     ],
     mapEmbedNote: "Mandhata Island, Omkareshwar, Khandwa, Madhya Pradesh",
-    contentNote:
-      "Narmada bathing and parikrama customs vary by family and pilgrimage tradition.",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "ypLrNihdyr4",
+    contentNote:"Narmada bathing and parikrama customs vary by family and pilgrimage tradition.",
+
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shri Omkareshwar Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      videoId: "TAdvRNXV9xE",
+    },
   },
   {
     slug: "trimbakeshwar-nashik",
@@ -1559,6 +1792,23 @@ export const TEMPLE_DATA: Temple[] = [
       "Saptashrungi Devi",
     ],
     mapEmbedNote: "Trimbak, Nashik, Maharashtra",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "DjBv-Ua8L10",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shri Trimbakeshwar Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: false,
+      videoId: "bEWmCgHKk4Y",
+    },
     contentNote:
       "Exact seva/ticketing rules are dynamic; verify with the official temple trust.",
   },
@@ -1678,6 +1928,23 @@ export const TEMPLE_DATA: Temple[] = [
       "Dimbhe Dam region",
     ],
     mapEmbedNote: "Bhimashankar, Pune district, Maharashtra",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "MCO6665tQ_Y",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shri Bhimashankar Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      videoId: "Rjp4rCDrGDE",
+    },
     contentNote:
       "Monsoon travel requires weather-aware planning; trail and road conditions can change.",
   },
@@ -1800,6 +2067,24 @@ export const TEMPLE_DATA: Temple[] = [
     ],
     nearby: ["Basukinath Dham", "Trikuta Parvat", "Tapovan", "Nandan Pahar"],
     mapEmbedNote: "Baidyanath Dham, Deoghar, Jharkhand",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "OpL1E9b5-Lc",
+
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Baba Baidyanath Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      videoId: "_oQMbwGiYww",
+    },
     contentNote:
       "Shakti Peetha identification at Deoghar is tradition-dependent; this record separates the Jyotirlinga identity from the Shakti tradition.",
   },
@@ -1928,6 +2213,23 @@ export const TEMPLE_DATA: Temple[] = [
       "Gopi Talav",
     ],
     mapEmbedNote: "Nageshwar, near Dwarka, Devbhumi Dwarka, Gujarat",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "KJhyydaGBno",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Shri Nageshwar Jyotirlinga",
+      time: "Official YouTube Live Broadcast",
+      isOfficial: true,
+      videoId: "yabI1L-BnEU",
+    },
     contentNote:
       "The Nageshwar location has historical/traditional identification debates; present-day temple identity follows the Dwarka pilgrimage tradition.",
   },
@@ -2056,6 +2358,23 @@ export const TEMPLE_DATA: Temple[] = [
       "Bibi Ka Maqbara",
     ],
     mapEmbedNote: "Verul near Ellora, Chhatrapati Sambhajinagar, Maharashtra",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "ovKzjY-Salw",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Grishneshwar Jyotirlinga",
+      time: "Live YouTube Broadcast",
+      isOfficial: false,
+      videoId: "p_-tirUSTpQ",
+    },
     contentNote:
       "Temple entry customs and dress requirements can change; verify locally before arrival.",
   },
@@ -2181,6 +2500,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Amarnath, Anantnag, Jammu and Kashmir",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2316,6 +2641,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Attahasa, Birbhum, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2451,6 +2782,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Ketugram / Bardhaman, Purba Bardhaman, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2586,6 +2923,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Bakreshwar, Birbhum, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2721,6 +3064,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Bhairavparvat, Ujjain, Ujjain, Madhya Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2856,6 +3205,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Bhavanipur, Bogra, Bangladesh, Bangladesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -2991,6 +3346,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Chandi River / Gandaki region, Mustang, Nepal, Nepal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3126,6 +3487,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Janasthaan, Nashik, Nashik, Maharashtra",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3261,6 +3628,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Hinglaj, Balochistan, Lasbela, Pakistan, Pakistan",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3396,6 +3769,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Nartiang, West Jaintia Hills, Meghalaya",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3531,6 +3910,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Satkhira / Khulna region, Satkhira, Bangladesh, Bangladesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3666,6 +4051,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Jwalamukhi, Kangra, Kangra, Himachal Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3801,6 +4192,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Kalighat, Kolkata, Kolkata, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -3936,6 +4333,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Amarkantak, Anuppur, Madhya Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4071,6 +4474,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Guwahati / Nilachal Hill, Kamrup Metropolitan, Assam",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4206,6 +4615,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Kankalitala region, Birbhum, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4341,6 +4756,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Kanyakumari, Kanyakumari, Tamil Nadu",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4476,6 +4897,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Chamundi Hills, Mysuru, Mysuru, Karnataka",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4611,6 +5038,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Murshidabad, Murshidabad, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4746,6 +5179,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Anandamayee Temple region, Hooghly, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -4881,6 +5320,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Bodaganj, Jalpaiguri, Jalpaiguri, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5016,6 +5461,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Manasarovar, Ngari / Burang, Tibet, Tibet",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5151,6 +5602,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Pushkar, Ajmer, Rajasthan",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5286,6 +5743,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Mithila, India–Nepal border, Darbhanga, Bihar",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5421,6 +5884,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Nainativu, Jaffna, Jaffna, Sri Lanka, Sri Lanka",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5556,6 +6025,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Guhyeshwari, Kathmandu, Kathmandu, Nepal, Nepal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5691,6 +6166,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Chandranath Hills, Chittagong, Bangladesh, Bangladesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5826,6 +6307,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Panch Sagar, Varanasi, Uttar Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -5961,6 +6448,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Junagadh, Junagadh, Gujarat",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6096,6 +6589,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Prayag / Prayagraj, Prayagraj, Uttar Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6231,6 +6730,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Kurukshetra, Kurukshetra, Haryana",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6366,6 +6871,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Maihar, Satna, Madhya Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6501,6 +7012,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Nandikeshwari, Birbhum, Birbhum, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6637,6 +7154,12 @@ export const TEMPLE_DATA: Temple[] = [
     ],
     mapEmbedNote:
       "Kotilingeswar region, Godavari, East Godavari, Andhra Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6772,6 +7295,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Shivaharkaray, Karachi, Karachi, Pakistan, Pakistan",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -6907,6 +7436,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Amarkantak, Anuppur, Madhya Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7042,6 +7577,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Srisailam, Nandyal, Andhra Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7177,6 +7718,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Sri Shail / Sylhet region, Sylhet, Bangladesh, Bangladesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7312,6 +7859,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Suchindram / Kanyakumari region, Kanyakumari, Tamil Nadu",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7447,6 +8000,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Shikarpur, Barishal, Barishal, Bangladesh, Bangladesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7582,6 +8141,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Udaipur, Tripura, Gomati, Tripura",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7717,6 +8282,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Ujaani, Purba Bardhaman, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7852,6 +8423,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Varanasi, Varanasi, Uttar Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -7987,6 +8564,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Vibash / Medinipur region, Purba Medinipur, West Bengal",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8122,6 +8705,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Bharatpur, Bharatpur, Rajasthan",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8257,6 +8846,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Vrindavan / Bhuteshwar, Mathura, Uttar Pradesh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8392,6 +8987,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Jalandhar, Jalandhar, Punjab",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8527,6 +9128,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Ambaji, Banaskantha, Gujarat",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8662,6 +9269,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Deoghar, Deoghar, Jharkhand",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8797,6 +9410,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Dantewada, Dantewada, Chhattisgarh",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8932,6 +9551,12 @@ export const TEMPLE_DATA: Temple[] = [
       "Local nature or cultural attractions",
     ],
     mapEmbedNote: "Jajpur, Jajpur, Odisha",
+    // ==========================================
+    // TEMPLE STORY VIDEO
+    // ==========================================
+    // Add a YouTube story/history video ID here.
+    // Keep empty until the video is selected.
+    storyVideoId: "",
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
@@ -8947,6 +9572,320 @@ export const TEMPLE_DATA: Temple[] = [
       "Traditional 51-Peetha compilation. Body-part and location identifications can vary between Shakta texts and regional traditions.",
   },
 ];
+
+
+/* ============================================================
+   DYNAMIC DEEP SEO ENGINE — ALL TEMPLE RECORDS
+   ============================================================
+
+   Location hierarchy:
+   Area / Locality → City → District → State → India
+
+   Search-intent hierarchy:
+   Temple → Darshan → Aarti → History → Travel → Nearby
+
+   All values are derived from the existing record so the same component
+   can serve all 66 temple pages without duplicating SEO logic.
+*/
+function seoClean(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function seoUnique(values: string[]): string[] {
+  return Array.from(
+    new Set(values.map(seoClean).filter(Boolean)),
+  );
+}
+
+function seoLimit(value: string, max: number): string {
+  const clean = seoClean(value);
+
+  if (clean.length <= max) {
+    return clean;
+  }
+
+  const cut = clean.slice(0, max + 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  const safeCut = lastSpace > 40 ? lastSpace : max;
+
+  return `${clean.slice(0, safeCut).trim()}…`;
+}
+
+function getTempleArea(temple: Temple): string {
+  const firstPart = seoClean(
+    temple.mapEmbedNote.split(",")[0] ?? "",
+  );
+
+  const city = seoClean(temple.city).toLowerCase();
+  const district = seoClean(temple.district).toLowerCase();
+
+  if (
+    firstPart &&
+    firstPart.toLowerCase() !== city &&
+    firstPart.toLowerCase() !== district
+  ) {
+    return firstPart;
+  }
+
+  return seoClean(temple.district) || city;
+}
+
+function buildTempleSEO(temple: Temple): TempleSEO {
+  const name = seoClean(temple.name);
+  const city = seoClean(temple.city);
+  const state = seoClean(temple.state);
+  const district = seoClean(temple.district);
+  const deity = seoClean(temple.deity);
+  const area = getTempleArea(temple);
+
+  const canonicalPath = `/temples/${encodeURIComponent(temple.slug)}`;
+
+  const locationLabel = seoUnique([
+    area,
+    city,
+    district,
+    state,
+    "India",
+  ]).join(", ");
+
+  // ----------------------------
+  // Primary temple/entity terms
+  // ----------------------------
+  const primaryKeywords = seoUnique([
+    name,
+    `${name} temple`,
+    `${name} ${city}`,
+    `${name} ${state}`,
+    `${name} darshan`,
+    `${name} aarti`,
+  ]);
+
+  // ----------------------------
+  // Geo / local SEO clusters
+  // ----------------------------
+  const locationKeywords = seoUnique([
+    `${name} ${city}`,
+    `${name} ${district}`,
+    `${name} ${state}`,
+    `${name} ${city} ${state}`,
+    `${name} temple ${city}`,
+    `${name} temple ${district}`,
+    `${name} temple ${state}`,
+    `${area} ${name}`,
+    `${area} ${city}`,
+    `${city} temple`,
+    `temples in ${city}`,
+    `temples in ${district}`,
+    `temples in ${state}`,
+    `pilgrimage in ${city}`,
+    `pilgrimage in ${state}`,
+    ...temple.category.map(
+      (category) => `${seoClean(category)} ${city}`,
+    ),
+  ]);
+
+  // ----------------------------
+  // Long-tail / search-intent terms
+  // ----------------------------
+  const longTailKeywords = seoUnique([
+    `${name} darshan timings`,
+    `${name} aarti timings`,
+    `${name} temple timings`,
+    `${name} history`,
+    `${name} temple history`,
+    `${name} significance`,
+    `how to reach ${name}`,
+    `${name} address`,
+    `${name} near ${area}`,
+    `${name} nearby places`,
+    `${name} nearby temples`,
+    `places to visit near ${name}`,
+    `pilgrimage to ${name}`,
+    `visit ${name} ${city}`,
+    `darshan at ${name}`,
+    `aarti at ${name}`,
+    `${name} festivals`,
+    `${name} puja information`,
+    `${name} pilgrim guide`,
+  ]);
+
+  const keywords = seoUnique([
+    ...primaryKeywords,
+    ...locationKeywords,
+    ...longTailKeywords,
+  ]);
+
+  const searchIntents = seoUnique([
+    `Temple information: ${name}`,
+    `Darshan information: ${name} in ${city}`,
+    `Aarti information: ${name} in ${city}`,
+    `History information: ${name} in ${state}`,
+    `Local search: ${name} near ${area}`,
+    `Travel search: how to reach ${name}`,
+    `Pilgrimage search: visit ${name}`,
+    `Nearby search: places near ${name}`,
+  ]);
+
+  // Keep title and description focused on real search intent.
+  const title = seoLimit(
+    `${name}, ${city} — Darshan, Aarti & History | DivyaDhara`,
+    68,
+  );
+
+  const description = seoLimit(
+    `${name} in ${city}, ${state}. Explore ${deity}, temple history, darshan timings, aarti, festivals, how to reach, nearby sacred places and pilgrimage information.`,
+    158,
+  );
+
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: "/",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Temples",
+      item: "/temples",
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: state,
+      item: `/temples?state=${encodeURIComponent(state)}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      name,
+      item: canonicalPath,
+    },
+  ];
+
+  const schema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    name,
+    description: seoClean(temple.summary),
+    image: temple.image,
+    urlPath: canonicalPath,
+    inLanguage: ["en", "hi"],
+    touristType: [
+      "Pilgrimage travellers",
+      "Temple visitors",
+    ],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: city,
+      addressRegion: state,
+      addressCountry: "IN",
+    },
+    containedInPlace: {
+      "@type": "AdministrativeArea",
+      name: district,
+    },
+    about: [
+      {
+        "@type": "Thing",
+        name: deity,
+      },
+      ...temple.category.slice(0, 4).map((category) => ({
+        "@type": "Thing",
+        name: seoClean(category),
+      })),
+    ],
+    keywords: keywords.join(", "),
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      name: title,
+      urlPath: canonicalPath,
+    },
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbItems,
+    },
+  };
+
+  if (temple.mapEmbedNote.trim()) {
+    schema.hasMapQuery = temple.mapEmbedNote.trim();
+  }
+
+  const trustedSources = (temple.sources ?? [])
+    .filter(
+      (source) =>
+        source.type === "Official Temple" ||
+        source.type === "Government" ||
+        source.type === "Tourism",
+    )
+    .map((source) => source.url);
+
+  if (trustedSources.length) {
+    schema.citation = trustedSources;
+  }
+
+  return {
+    title,
+    description,
+    canonicalPath,
+    ogTitle: title,
+    ogDescription: description,
+    keywords,
+    primaryKeywords,
+    locationKeywords,
+    longTailKeywords,
+    area,
+    locationLabel,
+    searchIntents,
+    schema,
+  };
+}
+
+/**
+ * Attach unique SEO metadata to all current temple records.
+ * This catalogue contains 66 records.
+ */
+TEMPLE_DATA.forEach((temple) => {
+  temple.seo = buildTempleSEO(temple);
+});
+
+/**
+ * SEO index for sitemap/static generation, SSR and future SEO dashboards.
+ */
+export const TEMPLE_SEO_INDEX = Object.fromEntries(
+  TEMPLE_DATA.map((temple) => [
+    temple.slug,
+    temple.seo as TempleSEO,
+  ]),
+);
+
+/**
+ * Location indexes support future city/state/district landing pages
+ * without copying temple data into multiple files.
+ */
+export const TEMPLE_SEO_LOCATION_INDEX = TEMPLE_DATA.reduce(
+  (index, temple) => {
+    const stateKey = seoClean(temple.state);
+    const cityKey = seoClean(temple.city);
+    const districtKey = seoClean(temple.district);
+
+    index.states[stateKey] ??= [];
+    index.cities[cityKey] ??= [];
+    index.districts[districtKey] ??= [];
+
+    index.states[stateKey].push(temple.slug);
+    index.cities[cityKey].push(temple.slug);
+    index.districts[districtKey].push(temple.slug);
+
+    return index;
+  },
+  {
+    states: {} as Record<string, string[]>,
+    cities: {} as Record<string, string[]>,
+    districts: {} as Record<string, string[]>,
+  },
+);
 
 export const JYOTIRLINGA_DATA = TEMPLE_DATA.filter((temple) =>
   temple.category.includes("Jyotirlinga"),
@@ -8968,3 +9907,5 @@ export const TEMPLE_DATA_META = {
   sourcePolicy:
     "Prefer official temple/government sources for dynamic timings, access, booking and festival dates. Use traditional references for scriptural and Shakta identity where appropriate.",
 } as const;
+
+export type TempleDataMeta = typeof TEMPLE_DATA_META;

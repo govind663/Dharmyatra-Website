@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Search } from "lucide-react";
@@ -172,13 +173,13 @@ export function PlaceDetail() {
     );
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img
           src={p.image}
           alt={p.name}
           className="kenburns absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/50 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/50 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <BC
             items={[
@@ -233,7 +234,7 @@ export function PlaceDetail() {
             </div>
           </Reveal>
           <Reveal className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-[#1c1410] p-5 text-white">
+            <div className="rounded-2xl bg-char-900 p-5 text-white">
               <p className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
                 Best Time
               </p>
@@ -342,13 +343,13 @@ export function PackageDetail() {
   );
   return (
     <>
-      <section className="relative overflow-hidden bg-[#1c1410] text-white">
+      <section className="relative overflow-hidden bg-char-900 text-white">
         <img
           src={pk.image}
           alt={pk.name}
           className="kenburns absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1410] via-black/50 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-t from-char-900 via-black/50 to-black/30" />
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 md:px-6 lg:px-8">
           <BC
             items={[
@@ -444,7 +445,7 @@ export function PackageDetail() {
             <ol className="relative mt-5 space-y-5 border-l-2 border-orange-200 pl-6">
               {pk.itinerary.map((d) => (
                 <li key={d.day} className="relative">
-                  <span className="absolute -left-[2.05rem] top-0 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-orange-600 to-amber-500 text-[10px] font-extrabold text-white ring-4 ring-[#fffdf7]">
+                  <span className="absolute left-[-2.05rem] top-0 grid h-8 w-8 place-items-center rounded-full bg-linear-to-br from-orange-600 to-amber-500 text-[10px] font-extrabold text-white ring-4 ring-[#fffdf7]">
                     {d.day.replace("Day ", "D")}
                   </span>
                   <p className="text-xs font-bold uppercase tracking-widest text-orange-700">
@@ -524,7 +525,7 @@ export function PackageDetail() {
         </div>
         <aside className="mt-10 lg:mt-0">
           <div className="space-y-4 lg:sticky lg:top-28">
-            <div className="rounded-3xl bg-[#1c1410] p-6 text-center text-white">
+            <div className="rounded-3xl bg-char-900 p-6 text-center text-white">
               <p className="text-xs uppercase tracking-[0.25em] text-amber-400">
                 Starting price
               </p>
