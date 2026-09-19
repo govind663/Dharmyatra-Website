@@ -105,8 +105,7 @@ export interface TithiResult {
 }
 
 export interface NakshatraResult {
-  [x: string]: ReactNode;
-  index: number;
+    index: number;
   number: number;
   name: string;
   pada: number;
@@ -260,6 +259,8 @@ export interface FestivalMarker {
 export interface Panchang {
   date: Date;
   location: PanchangLocation;
+  /** Backward-compatible sunrise alias for older consumers. */
+  sunrise: Date | null;
 
   solar: SolarTimes;
   lunar: LunarTimes;

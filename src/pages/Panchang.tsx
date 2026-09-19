@@ -1450,10 +1450,7 @@ function PanchangView({
 
             <p className="text-sm text-stone-500">
               Ends ~{" "}
-              {
-                p.nakshatra
-                  .ends
-              }
+              {p.nakshatra.end ? p.nakshatra.end.toLocaleString() : "—"}
             </p>
           </Card>
 
