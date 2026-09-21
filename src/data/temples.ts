@@ -2382,7 +2382,7 @@ export const TEMPLE_DATA: Temple[] = [
   {
     slug: "shakti-peetha-01-mahamayi-amarnath",
     name: "Shakti Peetha — Maa Mahamaya",
-    sanskrit: "Maa Mahamaya",
+    sanskrit: "माँ महामाया शक्तिपीठ",
     city: "Amarnath",
     state: "Jammu and Kashmir",
     district: "Anantnag",
@@ -2506,6 +2506,17 @@ export const TEMPLE_DATA: Temple[] = [
     // Add a YouTube story/history video ID here.
     // Keep empty until the video is selected.
     storyVideoId: "",
+    // ==========================================
+    // LIVE AARTI / LIVE DARSHAN
+    // ==========================================
+    liveAarti: {
+      enabled: true,
+      provider: "youtube",
+      title: "Live Darshan — Maa Mahamaya Shakti Peetha",
+      time: "Live YouTube Broadcast",
+      isOfficial: true,
+      videoId: "p_-tirUSTpQ",
+    },
     sources: [
       {
         title: "51 Shakti Peethas — Traditional Compilation",
