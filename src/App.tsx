@@ -1,4 +1,7 @@
-import { useEffect } from "react";
+import {
+  useEffect,
+  type ReactNode,
+} from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -8,7 +11,14 @@ import {
 } from "react-router-dom";
 
 import Layout from "./components/Layout";
-import { AppProvider } from "./context/AppContext";
+import {
+  AppProvider,
+  useApp,
+} from "./context/AppContext";
+
+/* ============================================================================
+ * PUBLIC / MAIN PAGES
+ * ========================================================================== */
 
 import Home from "./pages/Home";
 
@@ -57,21 +67,49 @@ import {
   Contact,
 } from "./pages/Info";
 
+/* ============================================================================
+ * AUTH
+ * ========================================================================== */
+
 import {
   Login,
   Register,
   Forgot,
 } from "./pages/Auth";
 
+/* ============================================================================
+ * ACCOUNT
+ * ========================================================================== */
+
 import Dashboard from "./pages/Dashboard";
+
+/* ============================================================================
+ * ADMIN
+ * ========================================================================== */
+
+import AdminDashboard from "./pages/AdminDashboard";
+
+/* ============================================================================
+ * FALLBACK
+ * ========================================================================== */
+
 import NotFound from "./pages/NotFound";
 
+/* ============================================================================
+ * SCROLL TO TOP
+ * ========================================================================== */
+
 /**
- * Keeps the user at the top when moving between pages.
- * This is especially helpful for detail pages and mobile navigation.
+ * Keeps the user at the top whenever the route changes.
+ *
+ * Search params are included because Panchang and other pages may use
+ * query-string driven state.
  */
 function ScrollToTop() {
-  const { pathname, search } = useLocation();
+  const {
+    pathname,
+    search,
+  } = useLocation();
 
   useEffect(() => {
     window.scrollTo({
@@ -79,192 +117,479 @@ function ScrollToTop() {
       left: 0,
       behavior: "auto",
     });
-  }, [pathname, search]);
+  }, [
+    pathname,
+    search,
+  ]);
 
   return null;
 }
 
+/* ============================================================================
+ * AUTH / ROLE GUARDS
+ * ========================================================================== */
+
+type SupportedRole =
+  | "visitor"
+  | "pandit"
+  | "temple_manager"
+  | "sales"
+  | "super_admin";
+
+type RequireRoleProps = {
+  roles: SupportedRole[];
+  children: ReactNode;
+};
+
 /**
- * Central application routing for DivyaDhara.
+ * Protected role-based route guard.
  *
- * Route groups:
- * - Dharma: temples, puja services, pandits, ashrams
- * - Panchang & Jyotish: panchang, calendar, rashifal, kundli, gochar
- * - Yatra: packages, spiritual places, events, gallery, videos
- * - Learn: courses and articles
- * - Account: login, register, dashboard
+ * Behaviour:
+ * - While auth state is loading -> lightweight loading screen
+ * - No authenticated user -> /login
+ * - Authenticated but wrong role -> /
+ * - Correct role -> render requested page
+ *
+ * This guard is intentionally frontend navigation protection only.
+ * The real security boundary remains the Express backend middleware.
  */
+function RequireRole({
+  roles,
+  children,
+}: RequireRoleProps) {
+  const {
+    user,
+    isLoading,
+  } = useApp();
+
+  if (isLoading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#fdfaf5] px-5">
+        <div className="text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-orange-100 text-orange-800">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" />
+          </div>
+
+          <h1 className="mt-4 font-display text-xl font-semibold text-[#2a1a10]">
+            Verifying session
+          </h1>
+
+          <p className="mt-1 text-sm text-stone-500">
+            Please wait while DivyaDhara
+            verifies your account.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  if (
+    !roles.includes(
+      user.role as SupportedRole,
+    )
+  ) {
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    );
+  }
+
+  return children;
+}
+
+/* ============================================================================
+ * ROUTES
+ * ========================================================================== */
+
 function AppRoutes() {
   return (
     <>
       <ScrollToTop />
 
       <Routes>
+        {/* ====================================================================
+         * PUBLIC WEBSITE LAYOUT
+         * ================================================================== */}
+
         <Route element={<Layout />}>
+          {/* ------------------------------------------------------------------
+           * HOME
+           * ---------------------------------------------------------------- */}
 
-          {/* =================================================
-              HOME
-          ================================================== */}
-          <Route index element={<Home />} />
+          <Route
+            index
+            element={<Home />}
+          />
 
-          {/* =================================================
-              DHARMA — TEMPLES
-          ================================================== */}
-          <Route path="temples" element={<Temples />} />
-          <Route path="temples/:slug" element={<TempleDetail />} />
+          {/* ------------------------------------------------------------------
+           * DHARMA — TEMPLES
+           * ---------------------------------------------------------------- */}
 
-          {/* Friendly/legacy singular URL */}
+          <Route
+            path="temples"
+            element={<Temples />}
+          />
+
+          <Route
+            path="temples/:slug"
+            element={<TempleDetail />}
+          />
+
           <Route
             path="temple/:slug"
-            element={<Navigate to="/temples" replace />}
+            element={
+              <Navigate
+                to="/temples"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              DHARMA — PUJA SERVICES
-          ================================================== */}
-          <Route path="services" element={<Services />} />
-          <Route path="services/:slug" element={<ServiceDetail />} />
+          {/* ------------------------------------------------------------------
+           * DHARMA — PUJA SERVICES
+           * ---------------------------------------------------------------- */}
 
-          {/* Friendly alternate URL */}
+          <Route
+            path="services"
+            element={<Services />}
+          />
+
+          <Route
+            path="services/:slug"
+            element={<ServiceDetail />}
+          />
+
           <Route
             path="puja-services"
-            element={<Navigate to="/services" replace />}
+            element={
+              <Navigate
+                to="/services"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              DHARMA — PANDITS
-          ================================================== */}
-          <Route path="pandits" element={<Pandits />} />
-          <Route path="pandits/:slug" element={<PanditDetail />} />
+          {/* ------------------------------------------------------------------
+           * DHARMA — PANDITS
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="pandits"
+            element={<Pandits />}
+          />
+
+          <Route
+            path="pandits/:slug"
+            element={<PanditDetail />}
+          />
 
           <Route
             path="pandit/:slug"
-            element={<Navigate to="/pandits" replace />}
+            element={
+              <Navigate
+                to="/pandits"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              DHARMA — ASHRAMS
-          ================================================== */}
-          <Route path="ashrams" element={<AshramList />} />
-          <Route path="ashrams/:slug" element={<AshramDetail />} />
+          {/* ------------------------------------------------------------------
+           * DHARMA — ASHRAMS
+           * ---------------------------------------------------------------- */}
 
-          {/* =================================================
-              LEARN — COURSES
-          ================================================== */}
-          <Route path="courses" element={<CourseList />} />
-          <Route path="courses/:slug" element={<CourseDetail />} />
+          <Route
+            path="ashrams"
+            element={<AshramList />}
+          />
 
-          {/* =================================================
-              PANCHANG / CALENDAR / RASHIFAL / KUNDLI / GOCHAR
-              All five views are handled by the Panchang page.
-              The page can use the current route to select the
-              correct module/tab.
-          ================================================== */}
-          <Route path="panchang" element={<PanchangPage />} />
-          <Route path="calendar" element={<PanchangPage />} />
-          <Route path="rashifal" element={<PanchangPage />} />
-          <Route path="kundli" element={<PanchangPage />} />
-          <Route path="gochar" element={<PanchangPage />} />
+          <Route
+            path="ashrams/:slug"
+            element={<AshramDetail />}
+          />
 
-          {/* Friendly astrology aliases */}
+          {/* ------------------------------------------------------------------
+           * LEARN — COURSES
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="courses"
+            element={<CourseList />}
+          />
+
+          <Route
+            path="courses/:slug"
+            element={<CourseDetail />}
+          />
+
+          {/* ------------------------------------------------------------------
+           * PANCHANG / CALENDAR / RASHIFAL / KUNDLI / GOCHAR
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="panchang"
+            element={<PanchangPage />}
+          />
+
+          <Route
+            path="calendar"
+            element={<PanchangPage />}
+          />
+
+          <Route
+            path="rashifal"
+            element={<PanchangPage />}
+          />
+
+          <Route
+            path="kundli"
+            element={<PanchangPage />}
+          />
+
+          <Route
+            path="gochar"
+            element={<PanchangPage />}
+          />
+
+          {/* ------------------------------------------------------------------
+           * ASTROLOGY ALIASES
+           * ---------------------------------------------------------------- */}
+
           <Route
             path="jyotish"
-            element={<Navigate to="/kundli" replace />}
+            element={
+              <Navigate
+                to="/kundli"
+                replace
+              />
+            }
           />
+
           <Route
             path="horoscope"
-            element={<Navigate to="/rashifal" replace />}
+            element={
+              <Navigate
+                to="/rashifal"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              YATRA — EVENTS
-          ================================================== */}
-          <Route path="events" element={<EventList />} />
-          <Route path="events/:slug" element={<EventDetail />} />
+          {/* ------------------------------------------------------------------
+           * EVENTS
+           * ---------------------------------------------------------------- */}
 
-          {/* =================================================
-              YATRA — SPIRITUAL PLACES
-          ================================================== */}
-          <Route path="spiritual-places" element={<Places />} />
+          <Route
+            path="events"
+            element={<EventList />}
+          />
+
+          <Route
+            path="events/:slug"
+            element={<EventDetail />}
+          />
+
+          {/* ------------------------------------------------------------------
+           * SPIRITUAL PLACES
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="spiritual-places"
+            element={<Places />}
+          />
+
           <Route
             path="spiritual-places/:slug"
             element={<PlaceDetail />}
           />
 
-          {/* Friendly alternate URL */}
           <Route
             path="places"
-            element={<Navigate to="/spiritual-places" replace />}
+            element={
+              <Navigate
+                to="/spiritual-places"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              YATRA — PACKAGES
-          ================================================== */}
-          <Route path="packages" element={<Packages />} />
+          {/* ------------------------------------------------------------------
+           * YATRA PACKAGES
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="packages"
+            element={<Packages />}
+          />
+
           <Route
             path="packages/:slug"
             element={<PackageDetail />}
           />
+
           <Route
             path="packages/:slug/enquiry"
             element={<PackageEnquiry />}
           />
 
-          {/* Friendly alternate URL */}
           <Route
             path="yatra-packages"
-            element={<Navigate to="/packages" replace />}
+            element={
+              <Navigate
+                to="/packages"
+                replace
+              />
+            }
           />
 
-          {/* =================================================
-              MEDIA
-          ================================================== */}
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="videos" element={<Videos />} />
-          <Route path="articles" element={<Articles />} />
+          {/* ------------------------------------------------------------------
+           * MEDIA
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="gallery"
+            element={<Gallery />}
+          />
+
+          <Route
+            path="videos"
+            element={<Videos />}
+          />
+
+          <Route
+            path="articles"
+            element={<Articles />}
+          />
+
           <Route
             path="articles/:slug"
             element={<ArticleDetail />}
           />
 
-          {/* =================================================
-              INFORMATION
-          ================================================== */}
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
+          {/* ------------------------------------------------------------------
+           * INFORMATION
+           * ---------------------------------------------------------------- */}
 
-          {/* =================================================
-              AUTHENTICATION
-          ================================================== */}
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
+          <Route
+            path="about"
+            element={<About />}
+          />
+
+          <Route
+            path="contact"
+            element={<Contact />}
+          />
+
+          {/* ------------------------------------------------------------------
+           * AUTHENTICATION
+           * ---------------------------------------------------------------- */}
+
+          <Route
+            path="login"
+            element={<Login />}
+          />
+
+          <Route
+            path="register"
+            element={<Register />}
+          />
+
           <Route
             path="forgot-password"
             element={<Forgot />}
           />
 
-          {/* =================================================
-              USER DASHBOARD
-          ================================================== */}
-          <Route path="dashboard" element={<Dashboard />} />
+          {/* ------------------------------------------------------------------
+           * VISITOR ACCOUNT
+           * ----------------------------------------------------------------
+           *
+           * Dashboard component itself already handles the no-user case.
+           * We keep this route inside the public Layout because the visitor
+           * dashboard belongs to the normal website shell.
+           * ---------------------------------------------------------------- */}
 
-          {/* =================================================
-              404
-          ================================================== */}
-          <Route path="*" element={<NotFound />} />
-
+          <Route
+            path="dashboard"
+            element={<Dashboard />}
+          />
         </Route>
+
+        {/* ====================================================================
+         * SUPER ADMIN AREA
+         *
+         * IMPORTANT:
+         * This route is deliberately OUTSIDE the public Layout.
+         *
+         * AdminDashboard has its own:
+         * - header
+         * - sidebar
+         * - navigation
+         * - authentication UX
+         *
+         * Backend still protects /api/admin/* with:
+         * requireAuth + requireRole("super_admin")
+         * ================================================================== */}
+
+        <Route
+          path="admin/dashboard"
+          element={
+            <RequireRole
+              roles={[
+                "super_admin",
+              ]}
+            >
+              <AdminDashboard />
+            </RequireRole>
+          }
+        />
+
+        {/* Friendly admin root URL */}
+
+        <Route
+          path="admin"
+          element={
+            <Navigate
+              to="/admin/dashboard"
+              replace
+            />
+          }
+        />
+
+        {/* ====================================================================
+         * 404
+         *
+         * This must remain last.
+         * ================================================================== */}
+
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
       </Routes>
     </>
   );
 }
 
+/* ============================================================================
+ * APP ROOT
+ * ========================================================================== */
+
 export default function App() {
   return (
-    <AppProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AppProvider>
         <AppRoutes />
-      </BrowserRouter>
-    </AppProvider>
+      </AppProvider>
+    </BrowserRouter>
   );
 }
