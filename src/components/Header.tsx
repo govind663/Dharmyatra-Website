@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import {
   useEffect,
   useMemo,
@@ -26,7 +27,6 @@ import {
   Crown,
   Flame,
   Heart,
-  Image as ImageIcon,
   Images,
   Landmark,
   MapPinned,
@@ -42,8 +42,15 @@ import {
   X,
 } from "lucide-react";
 
-import { useApp } from "../context/AppContext";
-import { waLink, cx } from "../lib/utils";
+import {
+  getDashboardPathForRole,
+  useApp,
+} from "../context/AppContext";
+
+import {
+  waLink,
+  cx,
+} from "../lib/utils";
 
 import {
   TEMPLES,
@@ -53,7 +60,7 @@ import {
 } from "../data/content";
 
 /* =========================================================
-   NAVIGATION TYPES
+   TYPES
 ========================================================= */
 
 type HeaderChild = {
@@ -68,57 +75,133 @@ type HeaderLink = {
   children?: HeaderChild[];
 };
 
+type SearchResult = {
+  label: string;
+  sub: string;
+  href: string;
+  type: string;
+};
+
 /* =========================================================
    PRIMARY NAVIGATION
 ========================================================= */
 
 const LINKS: HeaderLink[] = [
-  { label: "Home", href: "/" },
+  {
+    label: "Home",
+    href: "/",
+  },
   {
     label: "Dharma",
     href: "/temples",
     children: [
-      { label: "Temples", href: "/temples", desc: "Discover temples, darshan, aarti & sacred places" },
-      { label: "Puja Services", href: "/services", desc: "Book puja, seva and traditional ceremonies" },
-      { label: "Pandits", href: "/pandits", desc: "Find pandits for puja & spiritual guidance" },
-      { label: "Ashrams", href: "/ashrams", desc: "Explore spiritual ashrams and learning spaces" },
+      {
+        label: "Temples",
+        href: "/temples",
+        desc: "Discover temples, darshan, aarti & sacred places",
+      },
+      {
+        label: "Puja Services",
+        href: "/services",
+        desc: "Book puja, seva and traditional ceremonies",
+      },
+      {
+        label: "Pandits",
+        href: "/pandits",
+        desc: "Find pandits for puja & spiritual guidance",
+      },
+      {
+        label: "Ashrams",
+        href: "/ashrams",
+        desc: "Explore spiritual ashrams and learning spaces",
+      },
     ],
   },
   {
     label: "Panchang",
     href: "/panchang",
     children: [
-      { label: "Today's Panchang", href: "/panchang", desc: "Tithi, Nakshatra, Yoga, Rahukaal & Muhurat" },
-      { label: "Festival Calendar", href: "/calendar", desc: "Festivals, Ekadashi, Purnima, Amavasya & vrat" },
-      { label: "Today's Rashifal", href: "/rashifal", desc: "Personal daily guidance for all 12 Rashis" },
-      { label: "Kundli", href: "/kundli", desc: "Birth chart, Lagna, planets, houses & Dasha" },
-      { label: "Gochar", href: "/gochar", desc: "Planetary transits and their influence" },
+      {
+        label: "Today's Panchang",
+        href: "/panchang",
+        desc: "Tithi, Nakshatra, Yoga, Rahukaal & Muhurat",
+      },
+      {
+        label: "Festival Calendar",
+        href: "/calendar",
+        desc: "Festivals, Ekadashi, Purnima, Amavasya & vrat",
+      },
+      {
+        label: "Today's Rashifal",
+        href: "/rashifal",
+        desc: "Personal daily guidance for all 12 Rashis",
+      },
+      {
+        label: "Kundli",
+        href: "/kundli",
+        desc: "Birth chart, Lagna, planets, houses & Dasha",
+      },
+      {
+        label: "Gochar",
+        href: "/gochar",
+        desc: "Planetary transits and their influence",
+      },
     ],
   },
   {
     label: "Yatra",
     href: "/packages",
     children: [
-      { label: "Yatra Packages", href: "/packages", desc: "Plan spiritual journeys across Bharat" },
-      { label: "Spiritual Places", href: "/spiritual-places", desc: "Jyotirlingas, Char Dham, sacred cities & dham" },
-      { label: "Events", href: "/events", desc: "Spiritual festivals, yatras & special events" },
-      { label: "Gallery", href: "/gallery", desc: "Temples, aarti, festivals & yatra moments" },
-      { label: "Videos", href: "/videos", desc: "Darshan, katha, aarti & spiritual travel videos" },
+      {
+        label: "Yatra Packages",
+        href: "/packages",
+        desc: "Plan spiritual journeys across Bharat",
+      },
+      {
+        label: "Spiritual Places",
+        href: "/spiritual-places",
+        desc: "Jyotirlingas, Char Dham, sacred cities & dham",
+      },
+      {
+        label: "Events",
+        href: "/events",
+        desc: "Spiritual festivals, yatras & special events",
+      },
+      {
+        label: "Gallery",
+        href: "/gallery",
+        desc: "Temples, aarti, festivals & yatra moments",
+      },
+      {
+        label: "Videos",
+        href: "/videos",
+        desc: "Darshan, katha, aarti & spiritual travel videos",
+      },
     ],
   },
   {
     label: "Learn",
     href: "/courses",
     children: [
-      { label: "Courses", href: "/courses", desc: "Learn spiritual and traditional subjects" },
+      {
+        label: "Courses",
+        href: "/courses",
+        desc: "Learn spiritual and traditional subjects",
+      },
     ],
   },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  {
+    label: "About",
+    href: "/about",
+  },
+  {
+    label: "Contact",
+    href: "/contact",
+  },
 ];
 
 /* =========================================================
-   PANCHANG PATHS
+   PATH GROUPS
 ========================================================= */
 
 const PANCHANG_PATHS = [
@@ -128,10 +211,6 @@ const PANCHANG_PATHS = [
   "/kundli",
   "/gochar",
 ];
-
-/* =========================================================
-   YATRA PATHS
-========================================================= */
 
 const YATRA_PATHS = [
   "/packages",
@@ -153,31 +232,125 @@ const LEARN_PATHS = [
 ];
 
 /* =========================================================
+   MOBILE NAV TYPES
+========================================================= */
+
+type MobileNavItem =
+  | {
+      kind: "single";
+      label: string;
+      href: string;
+    }
+  | {
+      kind: "group";
+      label: string;
+      href: string;
+      children: HeaderChild[];
+    };
+
+/* =========================================================
+   MOBILE NAVIGATION
+========================================================= */
+
+const MOBILE_LINKS: MobileNavItem[] = LINKS.map(
+  (link) => {
+    if (link.children?.length) {
+      return {
+        kind: "group" as const,
+        label: link.label,
+        href: link.href,
+        children: link.children,
+      };
+    }
+
+    return {
+      kind: "single" as const,
+      label: link.label,
+      href: link.href,
+    };
+  },
+);
+
+/* =========================================================
    CHILD ICONS
 ========================================================= */
 
-function PanchangChildIcon({ href }: { href: string }) {
-  if (href === "/panchang" || href === "/calendar") return <CalendarDays size={16} />;
-  if (href === "/rashifal") return <Sparkles size={16} />;
-  if (href === "/kundli") return <MoonStar size={16} />;
-  if (href === "/gochar") return <WandSparkles size={16} />;
+function PanchangChildIcon({
+  href,
+}: {
+  href: string;
+}) {
+  if (
+    href === "/panchang" ||
+    href === "/calendar"
+  ) {
+    return <CalendarDays size={16} />;
+  }
+
+  if (href === "/rashifal") {
+    return <Sparkles size={16} />;
+  }
+
+  if (href === "/kundli") {
+    return <MoonStar size={16} />;
+  }
+
+  if (href === "/gochar") {
+    return <WandSparkles size={16} />;
+  }
+
   return <CalendarDays size={16} />;
 }
 
-function YatraChildIcon({ href }: { href: string }) {
-  if (href === "/packages") return <Package size={16} />;
-  if (href === "/spiritual-places") return <Landmark size={16} />;
-  if (href === "/events") return <Bell size={16} />;
-  if (href === "/gallery") return <Images size={16} />;
-  if (href === "/videos") return <PlayCircle size={16} />;
+function YatraChildIcon({
+  href,
+}: {
+  href: string;
+}) {
+  if (href === "/packages") {
+    return <Package size={16} />;
+  }
+
+  if (href === "/spiritual-places") {
+    return <Landmark size={16} />;
+  }
+
+  if (href === "/events") {
+    return <Bell size={16} />;
+  }
+
+  if (href === "/gallery") {
+    return <Images size={16} />;
+  }
+
+  if (href === "/videos") {
+    return <PlayCircle size={16} />;
+  }
+
   return <Compass size={16} />;
 }
 
-function DharmaChildIcon({ href }: { href: string }) {
-  if (href === "/temples") return <Landmark size={16} />;
-  if (href === "/services") return <Sparkles size={16} />;
-  if (href === "/pandits") return <Crown size={16} />;
-  if (href === "/ashrams") return <Compass size={16} />;
+function DharmaChildIcon({
+  href,
+}: {
+  href: string;
+}) {
+  if (href === "/temples") {
+    return <Landmark size={16} />;
+  }
+
+  if (href === "/services") {
+    return <Sparkles size={16} />;
+  }
+
+  if (href === "/pandits") {
+    return <Crown size={16} />;
+  }
+
+  if (href === "/ashrams") {
+    return <Compass size={16} />;
+  }
+
   return <Compass size={16} />;
 }
 
@@ -193,29 +366,247 @@ function MobileChildIcon({
   parent,
   href,
 }: {
-  parent?: string;
+  parent: string;
   href: string;
 }) {
+  const iconClass =
+    "text-orange-500";
+
   if (parent === "Panchang") {
-    return <span className="text-orange-500"><PanchangChildIcon href={href} /></span>;
+    return (
+      <span className={iconClass}>
+        <PanchangChildIcon href={href} />
+      </span>
+    );
   }
+
   if (parent === "Yatra") {
-    return <span className="text-orange-500"><YatraChildIcon href={href} /></span>;
+    return (
+      <span className={iconClass}>
+        <YatraChildIcon href={href} />
+      </span>
+    );
   }
+
   if (parent === "Dharma") {
-    return <span className="text-orange-500"><DharmaChildIcon href={href} /></span>;
+    return (
+      <span className={iconClass}>
+        <DharmaChildIcon href={href} />
+      </span>
+    );
   }
+
   if (parent === "Learn") {
-    return <span className="text-orange-500"><LearnChildIcon /></span>;
+    return (
+      <span className={iconClass}>
+        <LearnChildIcon />
+      </span>
+    );
   }
+
   return null;
+}
+
+/* =========================================================
+   ROLE DASHBOARD LABEL
+========================================================= */
+
+function getDashboardLabel(
+  role: string | undefined,
+): string {
+  switch (role) {
+    case "pandit":
+      return "Pandit Dashboard";
+
+    case "temple_manager":
+      return "Temple Dashboard";
+
+    case "sales":
+      return "Sales Dashboard";
+
+    case "super_admin":
+      return "Admin Dashboard";
+
+    case "visitor":
+    default:
+      return "My Dashboard";
+  }
+}
+
+/* =========================================================
+   ROLE DASHBOARD ICON
+========================================================= */
+
+function DashboardIcon({
+  role,
+}: {
+  role: string | undefined;
+}) {
+  switch (role) {
+    case "pandit":
+      return <Crown size={15} />;
+
+    case "temple_manager":
+      return <Landmark size={15} />;
+
+    case "sales":
+      return <Compass size={15} />;
+
+    case "super_admin":
+      return <Sparkles size={15} />;
+
+    case "visitor":
+    default:
+      return <Heart size={15} />;
+  }
+}
+
+/* =========================================================
+   SEARCH STATIC PAGES
+========================================================= */
+
+const STATIC_SEARCH_PAGES = [
+  {
+    label: "Today's Panchang",
+    sub: "Tithi, Nakshatra, Rahukaal & Muhurat",
+    href: "/panchang",
+    keywords:
+      "panchang tithi nakshatra rahukaal muhurat",
+    type: "Panchang",
+  },
+  {
+    label: "Festival Calendar",
+    sub: "Ekadashi, Purnima, Amavasya & festivals",
+    href: "/calendar",
+    keywords:
+      "calendar festival ekadashi purnima amavasya vrat",
+    type: "Calendar",
+  },
+  {
+    label: "Today's Rashifal",
+    sub: "Daily guidance for all 12 Rashis",
+    href: "/rashifal",
+    keywords:
+      "rashifal rashi horoscope mesh vrishabh mithun astrology",
+    type: "Rashifal",
+  },
+  {
+    label: "Kundli",
+    sub: "Birth chart, Lagna, planets, houses & Dasha",
+    href: "/kundli",
+    keywords:
+      "kundli janam kundli birth chart lagna astrology dasha",
+    type: "Kundli",
+  },
+  {
+    label: "Gochar",
+    sub: "Planetary transits and their influence",
+    href: "/gochar",
+    keywords:
+      "gochar transit graha planet shani guru rahu ketu astrology",
+    type: "Gochar",
+  },
+  {
+    label: "Temples",
+    sub: "Temples, darshan, aarti and sacred places",
+    href: "/temples",
+    keywords:
+      "temple mandir darshan aarti puja",
+    type: "Temple",
+  },
+  {
+    label: "Puja Services",
+    sub: "Book puja, seva and traditional ceremonies",
+    href: "/services",
+    keywords:
+      "puja seva pandit griha puja bhumi puja vivah",
+    type: "Puja Service",
+  },
+  {
+    label: "Pandits",
+    sub: "Find pandits for puja and spiritual guidance",
+    href: "/pandits",
+    keywords:
+      "pandit priest purohit puja",
+    type: "Pandit",
+  },
+  {
+    label: "Ashrams",
+    sub: "Spiritual ashrams and learning spaces",
+    href: "/ashrams",
+    keywords:
+      "ashram spiritual meditation guru",
+    type: "Ashram",
+  },
+  {
+    label: "Events",
+    sub: "Spiritual festivals, yatras and special events",
+    href: "/events",
+    keywords:
+      "events utsav festival yatra spiritual",
+    type: "Event",
+  },
+  {
+    label: "Courses",
+    sub: "Spiritual and traditional learning",
+    href: "/courses",
+    keywords:
+      "course learning vedic spiritual astrology",
+    type: "Course",
+  },
+];
+
+/* =========================================================
+   SEARCH RESULT ICON
+========================================================= */
+
+function SearchResultIcon({
+  type,
+}: {
+  type: string;
+}) {
+  switch (type) {
+    case "Rashifal":
+      return <Sparkles size={15} />;
+
+    case "Kundli":
+      return <MoonStar size={15} />;
+
+    case "Calendar":
+      return <CalendarDays size={15} />;
+
+    case "Yatra":
+      return <MapPinned size={15} />;
+
+    case "Spiritual Place":
+      return <Landmark size={15} />;
+
+    case "Temple":
+      return <Landmark size={15} />;
+
+    case "Puja Service":
+      return <Sparkles size={15} />;
+
+    case "Pandit":
+      return <Crown size={15} />;
+
+    case "Ashram":
+      return <Compass size={15} />;
+
+    case "Event":
+      return <Bell size={15} />;
+
+    case "Course":
+      return <BookOpen size={15} />;
+
+    default:
+      return <Search size={15} />;
+  }
 }
 
 /* =========================================================
    HEADER
 ========================================================= */
-
-
 
 export default function Header() {
   const [
@@ -238,14 +629,38 @@ export default function Header() {
     setQ,
   ] = useState("");
 
-  const { user } =
-    useApp();
+  const {
+    user,
+  } = useApp();
 
   const loc =
     useLocation();
 
   const nav =
     useNavigate();
+
+  /* =======================================================
+     ROLE-AWARE DASHBOARD
+  ======================================================= */
+
+  const dashboardPath =
+    user
+      ? getDashboardPathForRole(
+          user.role,
+        )
+      : "/login";
+
+  const dashboardLabel =
+    user
+      ? getDashboardLabel(
+          user.role,
+        )
+      : "Login";
+
+  const dashboardFirstName =
+    user?.name?.trim()
+      ? user.name.trim().split(/\s+/)[0]
+      : "Account";
 
   /* =======================================================
      SCROLL STATE
@@ -282,7 +697,6 @@ export default function Header() {
   ======================================================= */
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobile(false);
     setSearchOpen(false);
     setQ("");
@@ -294,11 +708,14 @@ export default function Header() {
 
   useEffect(() => {
     const previousOverflow =
-      document.body.style
-        .overflow;
+      document.body.style.overflow;
+
+    const shouldLock =
+      mobile ||
+      searchOpen;
 
     document.body.style.overflow =
-      mobile
+      shouldLock
         ? "hidden"
         : "";
 
@@ -306,7 +723,10 @@ export default function Header() {
       document.body.style.overflow =
         previousOverflow;
     };
-  }, [mobile]);
+  }, [
+    mobile,
+    searchOpen,
+  ]);
 
   /* =======================================================
      ESCAPE KEY
@@ -317,12 +737,14 @@ export default function Header() {
       event: KeyboardEvent,
     ) => {
       if (
-        event.key ===
+        event.key !==
         "Escape"
       ) {
-        setMobile(false);
-        setSearchOpen(false);
+        return;
       }
+
+      setMobile(false);
+      setSearchOpen(false);
     };
 
     window.addEventListener(
@@ -343,29 +765,39 @@ export default function Header() {
   ======================================================= */
 
   const isPanchangActive =
-    PANCHANG_PATHS.includes(
-      loc.pathname,
+    PANCHANG_PATHS.some(
+      (path) =>
+        loc.pathname === path ||
+        loc.pathname.startsWith(
+          `${path}/`,
+        ),
     );
 
   const isYatraActive =
     YATRA_PATHS.some(
       (path) =>
         loc.pathname === path ||
-        loc.pathname.startsWith(`${path}/`),
+        loc.pathname.startsWith(
+          `${path}/`,
+        ),
     );
 
   const isDharmaActive =
     DHARMA_PATHS.some(
       (path) =>
         loc.pathname === path ||
-        loc.pathname.startsWith(`${path}/`),
+        loc.pathname.startsWith(
+          `${path}/`,
+        ),
     );
 
   const isLearnActive =
     LEARN_PATHS.some(
       (path) =>
         loc.pathname === path ||
-        loc.pathname.startsWith(`${path}/`),
+        loc.pathname.startsWith(
+          `${path}/`,
+        ),
     );
 
   const isPathActive = (
@@ -373,14 +805,27 @@ export default function Header() {
   ) => {
     if (href === "/") {
       return (
-        loc.pathname ===
-        "/"
+        loc.pathname === "/"
       );
     }
 
     return (
-      loc.pathname ===
-        href ||
+      loc.pathname === href ||
+      loc.pathname.startsWith(
+        `${href}/`,
+      )
+    );
+  };
+
+  /* =======================================================
+     CHILD ACTIVE
+  ======================================================= */
+
+  const isChildActive = (
+    href: string,
+  ) => {
+    return (
+      loc.pathname === href ||
       loc.pathname.startsWith(
         `${href}/`,
       )
@@ -391,268 +836,202 @@ export default function Header() {
      SEARCH RESULTS
   ======================================================= */
 
-  const results = useMemo(() => {
-    const searchTerm =
-      q.trim().toLowerCase();
+  const results =
+    useMemo<SearchResult[]>(
+      () => {
+        const searchTerm =
+          q.trim().toLowerCase();
 
-    if (
-      searchTerm.length <
-      2
-    ) {
-      return [];
-    }
+        if (
+          searchTerm.length < 2
+        ) {
+          return [];
+        }
 
-    const searchResults: {
-      label: string;
-      sub: string;
-      href: string;
-      type: string;
-    }[] = [];
+        const searchResults: SearchResult[] =
+          [];
 
-    /* -----------------------------------------------
-       Temples
-    ------------------------------------------------ */
+        /* -----------------------------------------------
+           TEMPLES
+        ------------------------------------------------ */
 
-    TEMPLES.filter(
-      (temple) =>
-        (
-          temple.name +
-          temple.city +
-          temple.state
+        TEMPLES.filter(
+          (temple) =>
+            (
+              temple.name +
+              " " +
+              temple.city +
+              " " +
+              temple.state
+            )
+              .toLowerCase()
+              .includes(
+                searchTerm,
+              ),
         )
-          .toLowerCase()
-          .includes(
-            searchTerm,
-          ),
-    )
-      .slice(0, 3)
-      .forEach(
-        (temple) => {
-          searchResults.push({
-            label:
-              temple.name,
-            sub: `${temple.city}, ${temple.state}`,
-            href: `/temples/${temple.slug}`,
-            type: "Temple",
-          });
-        },
-      );
+          .slice(0, 3)
+          .forEach(
+            (temple) => {
+              searchResults.push({
+                label:
+                  temple.name,
+                sub: `${temple.city}, ${temple.state}`,
+                href: `/temples/${temple.slug}`,
+                type: "Temple",
+              });
+            },
+          );
 
-    /* -----------------------------------------------
-       Services
-    ------------------------------------------------ */
+        /* -----------------------------------------------
+           SERVICES
+        ------------------------------------------------ */
 
-    SERVICES.filter(
-      (service) =>
-        (
-          service.name +
-          service.category
+        SERVICES.filter(
+          (service) =>
+            (
+              service.name +
+              " " +
+              service.category
+            )
+              .toLowerCase()
+              .includes(
+                searchTerm,
+              ),
         )
-          .toLowerCase()
-          .includes(
-            searchTerm,
-          ),
-    )
-      .slice(0, 3)
-      .forEach(
-        (service) => {
-          searchResults.push({
-            label:
-              service.name,
-            sub:
-              service.category,
-            href: `/services/${service.slug}`,
-            type:
-              "Puja Service",
-          });
-        },
-      );
+          .slice(0, 3)
+          .forEach(
+            (service) => {
+              searchResults.push({
+                label:
+                  service.name,
+                sub:
+                  service.category,
+                href: `/services/${service.slug}`,
+                type:
+                  "Puja Service",
+              });
+            },
+          );
 
-    /* -----------------------------------------------
-       Spiritual Places
-    ------------------------------------------------ */
+        /* -----------------------------------------------
+           SPIRITUAL PLACES
+        ------------------------------------------------ */
 
-    PLACES.filter(
-      (place) =>
-        (
-          place.name +
-          place.state
+        PLACES.filter(
+          (place) =>
+            (
+              place.name +
+              " " +
+              place.state
+            )
+              .toLowerCase()
+              .includes(
+                searchTerm,
+              ),
         )
-          .toLowerCase()
-          .includes(
-            searchTerm,
-          ),
-    )
-      .slice(0, 2)
-      .forEach(
-        (place) => {
-          searchResults.push({
-            label:
-              place.name,
-            sub:
-              place.type,
-            href: `/spiritual-places/${place.slug}`,
-            type:
-              "Spiritual Place",
-          });
-        },
-      );
+          .slice(0, 2)
+          .forEach(
+            (place) => {
+              searchResults.push({
+                label:
+                  place.name,
+                sub:
+                  place.type,
+                href: `/spiritual-places/${place.slug}`,
+                type:
+                  "Spiritual Place",
+              });
+            },
+          );
 
-    /* -----------------------------------------------
-       Packages
-    ------------------------------------------------ */
+        /* -----------------------------------------------
+           PACKAGES
+        ------------------------------------------------ */
 
-    PACKAGES.filter(
-      (item) =>
-        (
-          item.name +
-          item.destination
+        PACKAGES.filter(
+          (item) =>
+            (
+              item.name +
+              " " +
+              item.destination
+            )
+              .toLowerCase()
+              .includes(
+                searchTerm,
+              ),
         )
-          .toLowerCase()
-          .includes(
-            searchTerm,
-          ),
-    )
-      .slice(0, 2)
-      .forEach(
-        (item) => {
-          searchResults.push({
-            label:
-              item.name,
-            sub:
-              item.duration,
-            href: `/packages/${item.slug}`,
-            type: "Yatra",
-          });
-        },
-      );
+          .slice(0, 2)
+          .forEach(
+            (item) => {
+              searchResults.push({
+                label:
+                  item.name,
+                sub:
+                  item.duration,
+                href: `/packages/${item.slug}`,
+                type: "Yatra",
+              });
+            },
+          );
 
-    /* -----------------------------------------------
-       Static Panchang Search
-    ------------------------------------------------ */
+        /* -----------------------------------------------
+           STATIC PAGES
+        ------------------------------------------------ */
 
-    const staticPanchang =
-      [
-        {
-          label:
-            "Today's Panchang",
-          sub:
-            "Tithi, Nakshatra, Rahukaal & Muhurat",
-          href: "/panchang",
-          keywords:
-            "panchang tithi nakshatra rahukaal muhurat",
-          type: "Panchang",
-        },
-        {
-          label:
-            "Festival Calendar",
-          sub:
-            "Ekadashi, Purnima, Amavasya & festivals",
-          href: "/calendar",
-          keywords:
-            "calendar festival ekadashi purnima amavasya vrat",
-          type:
-            "Calendar",
-        },
-        {
-          label:
-            "Today's Rashifal",
-          sub:
-            "Daily guidance for all 12 Rashis",
-          href: "/rashifal",
-          keywords:
-            "rashifal rashi horoscope mesh vrishabh mithun astrology",
-          type:
-            "Rashifal",
-        },
-        {
-          label: "Kundli",
-          sub: "Birth chart, Lagna, planets, houses & Dasha",
-          href: "/kundli",
-          keywords: "kundli janam kundli birth chart lagna astrology dasha",
-          type: "Kundli",
-        },
-        {
-          label: "Gochar",
-          sub: "Planetary transits and their influence",
-          href: "/gochar",
-          keywords: "gochar transit graha planet shani guru rahu ketu astrology",
-          type: "Gochar",
-        },
-        {
-          label: "Temples",
-          sub: "Temples, darshan, aarti and sacred places",
-          href: "/temples",
-          keywords: "temple mandir darshan aarti puja",
-          type: "Temple",
-        },
-        {
-          label: "Puja Services",
-          sub: "Book puja, seva and traditional ceremonies",
-          href: "/services",
-          keywords: "puja seva pandit griha puja bhumi puja vivah",
-          type: "Puja Service",
-        },
-        {
-          label: "Pandits",
-          sub: "Find pandits for puja and spiritual guidance",
-          href: "/pandits",
-          keywords: "pandit priest purohit puja",
-          type: "Pandit",
-        },
-        {
-          label: "Ashrams",
-          sub: "Spiritual ashrams and learning spaces",
-          href: "/ashrams",
-          keywords: "ashram spiritual meditation guru",
-          type: "Ashram",
-        },
-        {
-          label: "Events",
-          sub: "Spiritual festivals, yatras and special events",
-          href: "/events",
-          keywords: "events utsav festival yatra spiritual",
-          type: "Event",
-        },
-        {
-          label: "Courses",
-          sub: "Spiritual and traditional learning",
-          href: "/courses",
-          keywords: "course learning vedic spiritual astrology",
-          type: "Course",
-        },
-      ];
+        STATIC_SEARCH_PAGES.filter(
+          (item) =>
+            (
+              item.label +
+              " " +
+              item.sub +
+              " " +
+              item.keywords
+            )
+              .toLowerCase()
+              .includes(
+                searchTerm,
+              ),
+        ).forEach(
+          (item) => {
+            searchResults.push({
+              label:
+                item.label,
+              sub:
+                item.sub,
+              href:
+                item.href,
+              type:
+                item.type,
+            });
+          },
+        );
 
-    staticPanchang
-      .filter(
-        (item) =>
-          (
-            item.label +
-            item.sub +
-            item.keywords
-          )
-            .toLowerCase()
-            .includes(
-              searchTerm,
-            ),
-      )
-      .forEach(
-        (item) => {
-          searchResults.push({
-            label:
-              item.label,
-            sub:
-              item.sub,
-            href:
-              item.href,
-            type:
-              item.type,
-          });
-        },
-      );
+        /* -----------------------------------------------
+           DEDUPE RESULTS
+        ------------------------------------------------ */
 
-    return searchResults;
-  }, [q]);
+        const seen =
+          new Set<string>();
+
+        return searchResults.filter(
+          (item) => {
+            const key =
+              `${item.href}|${item.label}`;
+
+            if (
+              seen.has(key)
+            ) {
+              return false;
+            }
+
+            seen.add(key);
+
+            return true;
+          },
+        );
+      },
+      [q],
+    );
 
   /* =======================================================
      OPEN SEARCH
@@ -664,81 +1043,36 @@ export default function Header() {
   };
 
   /* =======================================================
-     NAVIGATE SEARCH RESULT
+     CLOSE SEARCH
+  ======================================================= */
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setQ("");
+  };
+
+  /* =======================================================
+     SEARCH RESULT
   ======================================================= */
 
   const openSearchResult = (
     href: string,
   ) => {
-    setSearchOpen(false);
-    setQ("");
+    closeSearch();
     nav(href);
   };
 
   /* =======================================================
-     MOBILE NAV DATA
+     MOBILE NAV ACTIVE
   ======================================================= */
 
-  const mobileLinks =
-    useMemo(() => {
-      const items: {
-        label: string;
-        href: string;
-        parent?: string;
-      }[] = [];
+  const mobileSingleActive =
+    (href: string) =>
+      isPathActive(href);
 
-      LINKS.forEach(
-        (link) => {
-          items.push({
-            label:
-              link.label,
-            href:
-              link.href,
-          });
-
-          if (
-            link.children
-          ) {
-            link.children.forEach(
-              (child) => {
-                items.push({
-                  label:
-                    child.label,
-                  href:
-                    child.href,
-                  parent:
-                    link.label,
-                });
-              },
-            );
-          }
-        },
-      );
-
-      const seen =
-        new Set<string>();
-
-      return items.filter(
-        (item) => {
-          const key =
-            item.href;
-
-          if (
-            seen.has(
-              key,
-            )
-          ) {
-            return false;
-          }
-
-          seen.add(
-            key,
-          );
-
-          return true;
-        },
-      );
-    }, []);
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <>
@@ -772,7 +1106,6 @@ export default function Header() {
       <header
         className={cx(
           "sticky top-0 z-50 transition-all duration-300",
-
           scrolled
             ? "glass-warm border-b border-orange-900/10 shadow-[0_10px_40px_-15px_rgba(154,52,18,0.4)]"
             : "border-b border-orange-900/5 bg-cream-50/95",
@@ -797,14 +1130,14 @@ export default function Header() {
             </span>
 
             <span className="leading-tight">
-              <span className="font-display block text-[20px] text-xl font-bold tracking-tight text-[#2a1a10]">
-                दिव्य &nbsp;
+              <span className="font-display block text-xl font-bold tracking-tight text-[#2a1a10]">
+                दिव्य&nbsp;
                 <span className="text-gradient-saffron">
                   धारा
                 </span>
               </span>
 
-              <span className="block text-[12px] font-semibold uppercase  text-orange-700/80">
+              <span className="block text-[12px] font-semibold uppercase text-orange-700/80">
                 पवित्र भारत यात्रा
               </span>
             </span>
@@ -823,13 +1156,9 @@ export default function Header() {
                 const dropdownActive =
                   Boolean(
                     link.children?.some(
-                      (
-                        child,
-                      ) =>
-                        loc.pathname ===
-                          child.href ||
-                        loc.pathname.startsWith(
-                          `${child.href}/`,
+                      (child) =>
+                        isChildActive(
+                          child.href,
                         ),
                     ),
                   );
@@ -839,11 +1168,22 @@ export default function Header() {
                   "Panchang"
                     ? isPanchangActive
                     : link.label ===
-                      "Yatra"
+                        "Yatra"
                       ? isYatraActive
-                      : isPathActive(
-                          link.href,
-                        );
+                      : link.label ===
+                          "Dharma"
+                        ? isDharmaActive
+                        : link.label ===
+                            "Learn"
+                          ? isLearnActive
+                          : isPathActive(
+                              link.href,
+                            );
+
+                const expanded =
+                  Boolean(
+                    link.children,
+                  );
 
                 return (
                   <div
@@ -856,10 +1196,19 @@ export default function Header() {
                       to={
                         link.href
                       }
+                      aria-haspopup={
+                        expanded
+                          ? "menu"
+                          : undefined
+                      }
+                      aria-expanded={
+                        expanded
+                          ? dropdownActive
+                          : undefined
+                      }
                       className={() =>
                         cx(
                           "flex items-center gap-1 rounded-full px-3 py-2 text-[13.5px] font-semibold transition",
-
                           active ||
                             dropdownActive
                             ? "bg-orange-100 text-orange-900"
@@ -872,37 +1221,25 @@ export default function Header() {
                       {link.children && (
                         <ChevronDown
                           size={13}
-                          className="opacity-60 transition group-hover:rotate-180"
+                          className="opacity-60 transition group-hover:rotate-180 group-focus-within:rotate-180"
                         />
                       )}
                     </NavLink>
 
                     {link.children && (
                       <div className="invisible absolute left-0 top-full w-80 translate-y-2 pt-2 opacity-0 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                        <div className="overflow-hidden rounded-2xl border border-orange-900/10 bg-white p-2 shadow-2xl shadow-orange-900/15">
+                        <div
+                          className="overflow-hidden rounded-2xl border border-orange-900/10 bg-white p-2 shadow-2xl shadow-orange-900/15"
+                          role="menu"
+                        >
                           {link.children.map(
                             (
                               child,
                             ) => {
                               const childActive =
-                                loc.pathname ===
-                                  child.href ||
-                                loc.pathname.startsWith(
-                                  `${child.href}/`,
+                                isChildActive(
+                                  child.href,
                                 );
-
-                              const isPanchangChild =
-                                link.label ===
-                                "Panchang";
-
-                              const isYatraChild =
-                                link.label === "Yatra";
-
-                              const isDharmaChild =
-                                link.label === "Dharma";
-
-                              const isLearnChild =
-                                link.label === "Learn";
 
                               return (
                                 <Link
@@ -912,43 +1249,53 @@ export default function Header() {
                                   to={
                                     child.href
                                   }
+                                  role="menuitem"
                                   className={cx(
                                     "block rounded-xl px-4 py-3 transition",
-
                                     childActive
                                       ? "bg-orange-50"
                                       : "hover:bg-orange-50",
                                   )}
                                 >
-                                  <div className="flex items-start gap-3">                                    {(isPanchangChild ||
-                                      isYatraChild ||
-                                      isDharmaChild ||
-                                      isLearnChild) && (
-                                      <span
-                                        className={cx(
-                                          "mt-0.5 shrink-0",
-                                          childActive
-                                            ? "text-orange-700"
-                                            : "text-orange-500",
-                                        )}
-                                      >
-                                        {isPanchangChild ? (
-                                          <PanchangChildIcon href={child.href} />
-                                        ) : isYatraChild ? (
-                                          <YatraChildIcon href={child.href} />
-                                        ) : isDharmaChild ? (
-                                          <DharmaChildIcon href={child.href} />
-                                        ) : (
-                                          <LearnChildIcon />
-                                        )}
-                                      </span>
-                                    )}
+                                  <div className="flex items-start gap-3">
+                                    <span
+                                      className={cx(
+                                        "mt-0.5 shrink-0",
+                                        childActive
+                                          ? "text-orange-700"
+                                          : "text-orange-500",
+                                      )}
+                                    >
+                                      {link.label ===
+                                      "Panchang" ? (
+                                        <PanchangChildIcon
+                                          href={
+                                            child.href
+                                          }
+                                        />
+                                      ) : link.label ===
+                                        "Yatra" ? (
+                                        <YatraChildIcon
+                                          href={
+                                            child.href
+                                          }
+                                        />
+                                      ) : link.label ===
+                                        "Dharma" ? (
+                                        <DharmaChildIcon
+                                          href={
+                                            child.href
+                                          }
+                                        />
+                                      ) : (
+                                        <LearnChildIcon />
+                                      )}
+                                    </span>
 
                                     <span className="min-w-0">
                                       <span
                                         className={cx(
                                           "block text-sm font-bold",
-
                                           childActive
                                             ? "text-orange-800"
                                             : "text-stone-800",
@@ -994,6 +1341,9 @@ export default function Header() {
                 openSearch
               }
               aria-label="Search temples, puja, yatras, panchang, astrology"
+              aria-expanded={
+                searchOpen
+              }
               className="grid h-10 w-10 place-items-center rounded-full border border-orange-900/15 bg-white text-stone-700 transition hover:border-orange-500 hover:text-orange-700"
             >
               <Search
@@ -1017,19 +1367,29 @@ export default function Header() {
               WhatsApp
             </a>
 
-            {/* Login / Dashboard */}
+            {/* Role-aware Dashboard / Login */}
 
             <Link
               to={
-                user
-                  ? "/dashboard"
-                  : "/login"
+                dashboardPath
               }
               className="hidden items-center gap-1.5 rounded-full border border-orange-700/25 bg-orange-50 px-4 py-2.5 text-[13px] font-bold text-orange-900 transition hover:bg-orange-100 sm:inline-flex"
+              title={
+                user
+                  ? dashboardLabel
+                  : "Login"
+              }
+              aria-label={
+                user
+                  ? dashboardLabel
+                  : "Login"
+              }
             >
               {user ? (
-                <Heart
-                  size={15}
+                <DashboardIcon
+                  role={
+                    user.role
+                  }
                 />
               ) : (
                 <User
@@ -1038,13 +1398,11 @@ export default function Header() {
               )}
 
               {user
-                ? user.name.split(
-                    " ",
-                  )[0]
+                ? dashboardFirstName
                 : "Login"}
             </Link>
 
-            {/* Mobile button */}
+            {/* Mobile */}
 
             <button
               type="button"
@@ -1054,6 +1412,9 @@ export default function Header() {
                 )
               }
               aria-label="Open menu"
+              aria-expanded={
+                mobile
+              }
               className="grid h-10 w-10 place-items-center rounded-full bg-[#2a1a10] text-amber-100 xl:hidden"
             >
               <Menu
@@ -1100,12 +1461,15 @@ export default function Header() {
                 damping: 30,
                 stiffness: 260,
               }}
-              onClick={(event) =>
+              onClick={(
+                event,
+              ) =>
                 event.stopPropagation()
               }
               className="absolute right-0 top-0 flex h-full w-[88%] max-w-sm flex-col overflow-hidden bg-cream-50 shadow-2xl"
+              aria-label="Mobile navigation drawer"
             >
-              {/* Mobile header */}
+              {/* Mobile Header */}
 
               <div className="relative overflow-hidden bg-linear-to-br from-saffron-900 via-saffron-700 to-orange-600 px-6 pb-8 pt-6 text-white">
                 <div className="mandala-bg absolute inset-0 opacity-20" />
@@ -1133,7 +1497,7 @@ export default function Header() {
                       )
                     }
                     aria-label="Close menu"
-                    className="grid h-10 w-10 place-items-center rounded-full bg-white/15"
+                    className="grid h-10 w-10 place-items-center rounded-full bg-white/15 transition hover:bg-white/25"
                   >
                     <X
                       size={18}
@@ -1142,92 +1506,202 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* Mobile nav */}
+              {/* Mobile Nav */}
 
               <nav
                 className="flex-1 overflow-y-auto px-4 py-4"
                 aria-label="Mobile navigation"
               >
-                {mobileLinks.map(
+                {MOBILE_LINKS.map(
                   (item) => {
-                    let active =
-                      false;
-
                     if (
-                      item.parent ===
-                      "Panchang"
+                      item.kind ===
+                      "single"
                     ) {
-                      active =
-                        isPanchangActive &&
-                        item.href ===
-                          loc.pathname;
-                    } else if (
-                      item.parent === "Yatra" ||
-                      item.parent === "Dharma" ||
-                      item.parent === "Learn"
-                    ) {
-                      active =
-                        item.href === loc.pathname ||
-                        loc.pathname.startsWith(`${item.href}/`);
-                    } else if (
-                      item.href === "/"
-                    ) {
-                      active =
-                        loc.pathname ===
-                        "/";
-                    } else {
-                      active =
-                        loc.pathname ===
-                          item.href ||
-                        loc.pathname.startsWith(
-                          `${item.href}/`,
+                      const active =
+                        mobileSingleActive(
+                          item.href,
                         );
+
+                      return (
+                        <NavLink
+                          key={`${item.label}-${item.href}`}
+                          to={
+                            item.href
+                          }
+                          onClick={() =>
+                            setMobile(
+                              false,
+                            )
+                          }
+                          className={() =>
+                            cx(
+                              "mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition",
+                              active
+                                ? "bg-orange-100 text-orange-900"
+                                : "text-stone-700 hover:bg-orange-50",
+                            )
+                          }
+                        >
+                          <span>
+                            {
+                              item.label
+                            }
+                          </span>
+
+                          <span className="text-orange-400">
+                            →
+                          </span>
+                        </NavLink>
+                      );
                     }
 
+                    const groupActive =
+                      isPathActive(
+                        item.href,
+                      ) ||
+                      item.children.some(
+                        (
+                          child,
+                        ) =>
+                          isChildActive(
+                            child.href,
+                          ),
+                      );
+
                     return (
-                      <NavLink
-                        key={`${item.href}-${item.label}`}
-                        to={
-                          item.href
-                        }
-                        onClick={() =>
-                          setMobile(
-                            false,
-                          )
-                        }
-                        className={() =>
-                          cx(
-                            "mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition",
-
-                            active
-                              ? "bg-orange-100 text-orange-900"
-                              : "text-stone-700 hover:bg-orange-50",
-                          )
-                        }
+                      <div
+                        key={`${item.label}-${item.href}`}
+                        className="mb-2"
                       >
-                        <span className="flex items-center gap-2.5">
-                          <MobileChildIcon
-                            parent={
-                              item.parent
-                            }
-                            href={
-                              item.href
-                            }
-                          />
+                        {/* Parent */}
 
-                          {item.label}
-                        </span>
+                        <NavLink
+                          to={
+                            item.href
+                          }
+                          onClick={() =>
+                            setMobile(
+                              false,
+                            )
+                          }
+                          className={() =>
+                            cx(
+                              "mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-bold transition",
+                              groupActive
+                                ? "bg-orange-100 text-orange-900"
+                                : "text-stone-800 hover:bg-orange-50",
+                            )
+                          }
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="text-orange-600">
+                              {item.label ===
+                              "Dharma" ? (
+                                <Landmark
+                                  size={
+                                    17
+                                  }
+                                />
+                              ) : item.label ===
+                                "Panchang" ? (
+                                <CalendarDays
+                                  size={
+                                    17
+                                  }
+                                />
+                              ) : item.label ===
+                                "Yatra" ? (
+                                <MapPinned
+                                  size={
+                                    17
+                                  }
+                                />
+                              ) : (
+                                <BookOpen
+                                  size={
+                                    17
+                                  }
+                                />
+                              )}
+                            </span>
 
-                        <span className="text-orange-400">
-                          →
-                        </span>
-                      </NavLink>
+                            {
+                              item.label
+                            }
+                          </span>
+
+                          <span className="text-orange-400">
+                            →
+                          </span>
+                        </NavLink>
+
+                        {/* Children */}
+
+                        <div className="ml-2 space-y-1 border-l-2 border-orange-100 pl-2">
+                          {item.children.map(
+                            (
+                              child,
+                            ) => {
+                              const active =
+                                isChildActive(
+                                  child.href,
+                                );
+
+                              return (
+                                <NavLink
+                                  key={
+                                    child.href
+                                  }
+                                  to={
+                                    child.href
+                                  }
+                                  onClick={() =>
+                                    setMobile(
+                                      false,
+                                    )
+                                  }
+                                  className={() =>
+                                    cx(
+                                      "flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                                      active
+                                        ? "bg-orange-50 text-orange-900"
+                                        : "text-stone-600 hover:bg-orange-50 hover:text-orange-800",
+                                    )
+                                  }
+                                >
+                                  <span className="flex min-w-0 items-center gap-2.5">
+                                    <MobileChildIcon
+                                      parent={
+                                        item.label
+                                      }
+                                      href={
+                                        child.href
+                                      }
+                                    />
+
+                                    <span className="truncate">
+                                      {
+                                        child.label
+                                      }
+                                    </span>
+                                  </span>
+
+                                  <span className="text-xs text-orange-300">
+                                    →
+                                  </span>
+                                </NavLink>
+                              );
+                            },
+                          )}
+                        </div>
+                      </div>
                     );
                   },
                 )}
               </nav>
 
-              {/* Mobile actions */}
+              {/* Mobile Actions */}
 
               <div className="space-y-2 border-t border-orange-900/10 p-4">
                 <button
@@ -1236,12 +1710,9 @@ export default function Header() {
                     setMobile(
                       false,
                     );
-
-                    setSearchOpen(
-                      true,
-                    );
+                    openSearch();
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-900/15 bg-white px-4 py-3.5 font-bold text-stone-700"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-900/15 bg-white px-4 py-3.5 font-bold text-stone-700 transition hover:bg-orange-50"
                 >
                   <Search
                     size={17}
@@ -1255,6 +1726,11 @@ export default function Header() {
                   )}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() =>
+                    setMobile(
+                      false,
+                    )
+                  }
                   className="btn-saffron flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-bold text-white"
                 >
                   <MessageCircle
@@ -1263,26 +1739,34 @@ export default function Header() {
                   WhatsApp Us
                 </a>
 
+                {/* Role-aware mobile dashboard */}
+
                 <Link
                   to={
-                    user
-                      ? "/dashboard"
-                      : "/login"
+                    dashboardPath
                   }
                   onClick={() =>
                     setMobile(
                       false,
                     )
                   }
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-orange-700/25 bg-orange-50 px-4 py-3.5 font-bold text-orange-900"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-orange-700/25 bg-orange-50 px-4 py-3.5 font-bold text-orange-900 transition hover:bg-orange-100"
                 >
-                  <User
-                    size={17}
-                  />
+                  {user ? (
+                    <DashboardIcon
+                      role={
+                        user.role
+                      }
+                    />
+                  ) : (
+                    <User
+                      size={17}
+                    />
+                  )}
 
                   {user
-                    ? "My Dashboard"
-                    : "Login / Register"}
+                    ? dashboardLabel
+                    : "Login"}
                 </Link>
               </div>
             </motion.aside>
@@ -1307,11 +1791,12 @@ export default function Header() {
               opacity: 0,
             }}
             className="fixed inset-0 z-60 bg-char-900/60 p-4 backdrop-blur-sm"
-            onClick={() =>
-              setSearchOpen(
-                false,
-              )
+            onClick={
+              closeSearch
             }
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site search"
           >
             <motion.div
               initial={{
@@ -1326,12 +1811,14 @@ export default function Header() {
                 y: -24,
                 opacity: 0,
               }}
-              onClick={(event) =>
+              onClick={(
+                event,
+              ) =>
                 event.stopPropagation()
               }
               className="mx-auto mt-[8vh] max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
             >
-              {/* Search input */}
+              {/* Search Input */}
 
               <div className="flex items-center gap-3 border-b border-orange-900/10 px-5 py-4">
                 <Search
@@ -1346,9 +1833,7 @@ export default function Header() {
                     event,
                   ) =>
                     setQ(
-                      event
-                        .target
-                        .value,
+                      event.target.value,
                     )
                   }
                   onKeyDown={(
@@ -1356,29 +1841,40 @@ export default function Header() {
                   ) => {
                     if (
                       event.key ===
-                        "Enter" &&
-                      results[0]
+                      "Enter"
                     ) {
-                      openSearchResult(
-                        results[0]
-                          .href,
-                      );
+                      const firstResult =
+                        results[0];
+
+                      if (
+                        firstResult
+                      ) {
+                        openSearchResult(
+                          firstResult.href,
+                        );
+                      }
+                    }
+
+                    if (
+                      event.key ===
+                      "Escape"
+                    ) {
+                      closeSearch();
                     }
                   }}
                   placeholder="Search temples, puja, places, yatras, rashifal, kundli…"
                   className="w-full bg-transparent text-[15px] outline-none placeholder:text-stone-400"
-                  aria-label="Search"
+                  aria-label="Search temples, puja, places, yatras, rashifal, kundli"
+                  role="searchbox"
                 />
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setSearchOpen(
-                      false,
-                    )
+                  onClick={
+                    closeSearch
                   }
                   aria-label="Close search"
-                  className="grid h-9 w-9 place-items-center rounded-full bg-stone-100"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-stone-100 transition hover:bg-stone-200"
                 >
                   <X
                     size={16}
@@ -1386,11 +1882,11 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Search results */}
+              {/* Search Results */}
 
               <div className="max-h-[50vh] overflow-y-auto p-3">
-                {q.trim().length <
-                2 ? (
+                {q.trim()
+                  .length < 2 ? (
                   <div className="px-3 py-6 text-center text-sm text-stone-500">
                     <p className="font-sanskrit text-2xl text-orange-300">
                       ॐ
@@ -1439,62 +1935,11 @@ export default function Header() {
                       >
                         <span className="flex min-w-0 items-start gap-3">
                           <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-600">
-                            {result.type ===
-                            "Rashifal" ? (
-                              <Sparkles
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Kundli" ? (
-                              <MoonStar
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Calendar" ? (
-                              <CalendarDays
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Yatra" ? (
-                              <MapPinned
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Spiritual Place" ? (
-                              <Landmark
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Temple" ? (
-                              <Landmark
-                                size={
-                                  15
-                                }
-                              />
-                            ) : result.type ===
-                              "Puja Service" ? (
-                              <Sparkles
-                                size={
-                                  15
-                                }
-                              />
-                            ) : (
-                              <Search
-                                size={
-                                  15
-                                }
-                              />
-                            )}
+                            <SearchResultIcon
+                              type={
+                                result.type
+                              }
+                            />
                           </span>
 
                           <span className="min-w-0">
@@ -1509,6 +1954,12 @@ export default function Header() {
                                 result.sub
                               }
                             </span>
+
+                            <span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-orange-500">
+                              {
+                                result.type
+                              }
+                            </span>
                           </span>
                         </span>
 
@@ -1521,12 +1972,12 @@ export default function Header() {
                 )}
               </div>
 
-              {/* Search footer */}
+              {/* Search Footer */}
 
               <div className="flex items-center gap-2 border-t border-orange-900/10 bg-orange-50/60 px-5 py-3 text-xs text-stone-500">
                 <Bell
                   size={13}
-                  className="text-orange-600"
+                  className="shrink-0 text-orange-600"
                 />
 
                 <span>

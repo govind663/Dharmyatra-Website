@@ -45,6 +45,36 @@ export type UserStatus =
 
 /*
 |--------------------------------------------------------------------------
+| Dashboard Routes
+|--------------------------------------------------------------------------
+|
+| Centralized role → dashboard mapping.
+| Do not hard-code role dashboard paths in individual components.
+|--------------------------------------------------------------------------
+*/
+
+const ROLE_DASHBOARD_PATHS: Record<
+  UserRole,
+  string
+> = {
+  visitor: "/dashboard",
+  pandit: "/pandit/dashboard",
+  temple_manager: "/temple-manager/dashboard",
+  sales: "/sales/dashboard",
+  super_admin: "/admin/dashboard",
+};
+
+export function getDashboardPathForRole(
+  role: UserRole,
+): string {
+  return (
+    ROLE_DASHBOARD_PATHS[role] ??
+    ROLE_DASHBOARD_PATHS.visitor
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
 | Auth User
 |--------------------------------------------------------------------------
 */
@@ -64,7 +94,7 @@ export type User = {
 
 /*
 |--------------------------------------------------------------------------
-| Profile Update Input
+| Profile Update
 |--------------------------------------------------------------------------
 */
 
@@ -82,7 +112,7 @@ export type ProfileUpdateInput = Partial<
 
 /*
 |--------------------------------------------------------------------------
-| Registration Types
+| Registration
 |--------------------------------------------------------------------------
 */
 
@@ -111,7 +141,7 @@ export type RegisterInput = {
   marketingConsent?: boolean;
 
   /*
-   * Pandit-specific fields.
+   * Pandit fields.
    */
   title?: string;
   photo?: string;
@@ -127,7 +157,7 @@ export type RegisterInput = {
   services?: ServiceRegistrationInput[];
 
   /*
-   * Temple Manager-specific fields.
+   * Temple Manager fields.
    */
   designation?: string;
   organizationName?: string;
@@ -173,21 +203,33 @@ export type Notification = {
 
 /*
 |--------------------------------------------------------------------------
-| API Responses
+| API Envelope
 |--------------------------------------------------------------------------
 */
 
 type ApiEnvelope = {
   success?: boolean;
   authenticated?: boolean;
-  user?: User | null;
+  user?: unknown;
   message?: string;
   error?: string;
+  code?: string;
 };
 
 type AuthApiResponse = ApiEnvelope;
 
 type ProfileApiResponse = ApiEnvelope;
+
+/*
+|--------------------------------------------------------------------------
+| API Error Metadata
+|--------------------------------------------------------------------------
+*/
+
+type ApiError = Error & {
+  status?: number;
+  code?: string;
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -226,6 +268,25 @@ type AppState = {
   clearAuthError: () => void;
 
   /*
+   * Role helpers
+   */
+  hasRole: (
+    ...roles: UserRole[]
+  ) => boolean;
+
+  getDashboardPath: () => string;
+
+  isVisitor: boolean;
+
+  isPandit: boolean;
+
+  isTempleManager: boolean;
+
+  isSales: boolean;
+
+  isSuperAdmin: boolean;
+
+  /*
    * Profile
    */
   updateProfile: (
@@ -235,20 +296,10 @@ type AppState = {
   isProfileUpdating: boolean;
 
   /*
-   * Role helpers
-   */
-  hasRole: (...roles: UserRole[]) => boolean;
-
-  isVisitor: boolean;
-  isPandit: boolean;
-  isTempleManager: boolean;
-  isSales: boolean;
-  isSuperAdmin: boolean;
-
-  /*
    * Saved content
    */
   savedTemples: string[];
+
   savedPlaces: string[];
 
   toggleSave: (
@@ -281,11 +332,173 @@ type AppState = {
 */
 
 const Ctx =
-  createContext<AppState | null>(null);
+  createContext<AppState | null>(
+    null,
+  );
 
 /*
 |--------------------------------------------------------------------------
-| Local Storage Helper
+| Runtime Helpers
+|--------------------------------------------------------------------------
+*/
+
+function isRecord(
+  value: unknown,
+): value is Record<
+  string,
+  unknown
+> {
+  return (
+    typeof value ===
+      "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
+
+const VALID_ROLES: UserRole[] = [
+  "visitor",
+  "pandit",
+  "temple_manager",
+  "sales",
+  "super_admin",
+];
+
+const VALID_STATUSES: UserStatus[] = [
+  "pending",
+  "active",
+  "suspended",
+  "rejected",
+  "blocked",
+];
+
+/*
+|--------------------------------------------------------------------------
+| Normalize API User
+|--------------------------------------------------------------------------
+|
+| Server is the source of truth.
+| Optional user fields are normalized instead of making login fail
+| merely because an older endpoint omitted avatar/city/etc.
+|--------------------------------------------------------------------------
+*/
+
+function normalizeUser(
+  value: unknown,
+): User | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id =
+    typeof value.id ===
+    "number"
+      ? value.id
+      : Number(value.id);
+
+  const name =
+    typeof value.name ===
+    "string"
+      ? value.name.trim()
+      : "";
+
+  const email =
+    typeof value.email ===
+    "string"
+      ? value.email
+          .trim()
+          .toLowerCase()
+      : "";
+
+  const role =
+    typeof value.role ===
+    "string"
+      ? value.role
+      : "";
+
+  const status =
+    typeof value.status ===
+    "string"
+      ? value.status
+      : "";
+
+  if (
+    !Number.isFinite(id) ||
+    id <= 0
+  ) {
+    return null;
+  }
+
+  if (!name || !email) {
+    return null;
+  }
+
+  if (
+    !VALID_ROLES.includes(
+      role as UserRole,
+    )
+  ) {
+    return null;
+  }
+
+  if (
+    !VALID_STATUSES.includes(
+      status as UserStatus,
+    )
+  ) {
+    return null;
+  }
+
+  const nullableString = (
+    field: unknown,
+  ): string | null => {
+    if (
+      typeof field !==
+      "string"
+    ) {
+      return null;
+    }
+
+    const cleaned =
+      field.trim();
+
+    return cleaned || null;
+  };
+
+  return {
+    id,
+    name,
+    email,
+    phone:
+      nullableString(
+        value.phone,
+      ),
+    city:
+      nullableString(
+        value.city,
+      ),
+    state:
+      nullableString(
+        value.state,
+      ),
+    country:
+      nullableString(
+        value.country,
+      ),
+    role:
+      role as UserRole,
+    status:
+      status as UserStatus,
+    avatar:
+      nullableString(
+        value.avatar,
+      ),
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| Local Storage
 |--------------------------------------------------------------------------
 */
 
@@ -301,26 +514,22 @@ function loadStoredValue<T>(
   }
 
   try {
-    const value =
+    const stored =
       window.localStorage.getItem(
         key,
       );
 
-    if (!value) {
+    if (!stored) {
       return fallback;
     }
 
-    return JSON.parse(value) as T;
+    return JSON.parse(
+      stored,
+    ) as T;
   } catch {
     return fallback;
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| Local Storage Writer
-|--------------------------------------------------------------------------
-*/
 
 function saveStoredValue<T>(
   key: string,
@@ -340,17 +549,40 @@ function saveStoredValue<T>(
     );
   } catch {
     /*
-     * Ignore quota/private-mode/storage failures.
+     * Ignore storage quota/private-mode failures.
      */
   }
 }
 
+function loadStoredStringArray(
+  key: string,
+  fallback: string[] = [],
+): string[] {
+  const value =
+    loadStoredValue<unknown>(
+      key,
+      fallback,
+    );
+
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item ===
+        "string",
+    )
+    .map((item) =>
+      item.trim(),
+    )
+    .filter(Boolean);
+}
+
 /*
 |--------------------------------------------------------------------------
-| API Fetch
-|--------------------------------------------------------------------------
-|
-| Centralized enough for this context while keeping the file self-contained.
+| API Helper
 |--------------------------------------------------------------------------
 */
 
@@ -358,6 +590,15 @@ async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    throw new Error(
+      "API requests are only available in the browser.",
+    );
+  }
+
   const controller =
     new AbortController();
 
@@ -370,47 +611,56 @@ async function apiFetch<T>(
     );
 
   try {
+    const headers =
+      new Headers(
+        options.headers ??
+          {},
+      );
+
+    if (
+      !headers.has(
+        "Accept",
+      )
+    ) {
+      headers.set(
+        "Accept",
+        "application/json",
+      );
+    }
+
+    if (
+      options.body &&
+      !(options.body instanceof FormData) &&
+      !headers.has(
+        "Content-Type",
+      )
+    ) {
+      headers.set(
+        "Content-Type",
+        "application/json",
+      );
+    }
+
     const response =
       await fetch(
         `${API_BASE_URL}${endpoint}`,
         {
           ...options,
-
           credentials:
             "include",
-
+          headers,
           signal:
             controller.signal,
-
-          headers: {
-            Accept:
-              "application/json",
-
-            ...(options.body
-              ? {
-                  "Content-Type":
-                    "application/json",
-                }
-              : {}),
-
-            ...(options.headers ||
-              {}),
-          },
         },
       );
 
-    /*
-     * A few endpoints may legitimately return an empty body.
-     */
     const contentType =
       response.headers.get(
         "content-type",
       ) || "";
 
-    let data:
-      | T
-      | ApiEnvelope
-      | null = null;
+    let data: unknown =
+      null;
 
     if (
       response.status !== 204
@@ -422,7 +672,7 @@ async function apiFetch<T>(
       ) {
         try {
           data =
-            (await response.json()) as T;
+            await response.json();
         } catch {
           data = null;
         }
@@ -431,9 +681,10 @@ async function apiFetch<T>(
           const text =
             await response.text();
 
-          data = text
-            ? (text as T)
-            : null;
+          data =
+            text.trim()
+              ? text
+              : null;
         } catch {
           data = null;
         }
@@ -442,15 +693,36 @@ async function apiFetch<T>(
 
     if (!response.ok) {
       const apiError =
-        data as
-          | ApiEnvelope
-          | null;
+        isRecord(data)
+          ? data
+          : null;
 
-      throw new Error(
-        apiError?.error ||
-          apiError?.message ||
-          `Request failed with status ${response.status}.`,
-      );
+      const message =
+        typeof apiError?.error ===
+        "string"
+          ? apiError.error
+          : typeof apiError?.message ===
+              "string"
+            ? apiError.message
+            : `Request failed with status ${response.status}.`;
+
+      const error =
+        new Error(
+          message,
+        ) as ApiError;
+
+      error.status =
+        response.status;
+
+      if (
+        typeof apiError?.code ===
+        "string"
+      ) {
+        error.code =
+          apiError.code;
+      }
+
+      throw error;
     }
 
     return data as T;
@@ -469,7 +741,7 @@ async function apiFetch<T>(
       error instanceof TypeError
     ) {
       throw new Error(
-        "Unable to connect to the DivyaDhara API server. Please make sure the backend server is running.",
+        `Unable to connect to the DivyaDhara API server at ${API_BASE_URL}.`,
       );
     }
 
@@ -487,102 +759,211 @@ async function apiFetch<T>(
 
 /*
 |--------------------------------------------------------------------------
-| User Validation
+| Input Helpers
 |--------------------------------------------------------------------------
 */
 
-const VALID_ROLES: UserRole[] =
-  [
-    "visitor",
-    "pandit",
-    "temple_manager",
-    "sales",
-    "super_admin",
-  ];
+function cleanText(
+  value: string,
+): string {
+  return value.trim();
+}
 
-const VALID_STATUSES: UserStatus[] =
-  [
-    "pending",
-    "active",
-    "suspended",
-    "rejected",
-    "blocked",
-  ];
-
-function isValidUser(
-  value: unknown,
-): value is User {
+function cleanOptionalText(
+  value:
+    | string
+    | null
+    | undefined,
+): string | null {
   if (
-    !value ||
-    typeof value !== "object"
+    value === null ||
+    value === undefined
   ) {
-    return false;
+    return null;
   }
 
-  const candidate =
-    value as Partial<User>;
+  const cleaned =
+    value.trim();
 
-  return (
-    typeof candidate.id ===
-      "number" &&
-    Number.isFinite(
-      candidate.id,
-    ) &&
-    typeof candidate.name ===
-      "string" &&
-    typeof candidate.email ===
-      "string" &&
-    typeof candidate.role ===
-      "string" &&
-    VALID_ROLES.includes(
-      candidate.role as UserRole,
-    ) &&
-    typeof candidate.status ===
-      "string" &&
-    VALID_STATUSES.includes(
-      candidate.status as UserStatus,
-    )
+  return cleaned || null;
+}
+
+function isValidPhone(
+  phone: string,
+): boolean {
+  return /^[+0-9()\-\s]{7,20}$/.test(
+    phone,
   );
+}
+
+function normalizeStringArray(
+  value:
+    | string[]
+    | undefined,
+): string[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const cleaned =
+    Array.from(
+      new Set(
+        value
+          .map(
+            (item) =>
+              item.trim(),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+  return cleaned;
+}
+
+function normalizeRegisterData(
+  data: RegisterInput,
+): RegisterInput {
+  return {
+    ...data,
+
+    role: data.role,
+
+    name:
+      data.name.trim(),
+
+    email:
+      data.email
+        .trim()
+        .toLowerCase(),
+
+    phone:
+      data.phone?.trim() ||
+      undefined,
+
+    city:
+      data.city?.trim() ||
+      undefined,
+
+    state:
+      data.state?.trim() ||
+      undefined,
+
+    country:
+      data.country?.trim() ||
+      "India",
+
+    password:
+      data.password,
+
+    preferredLanguage:
+      data.preferredLanguage?.trim() ||
+      undefined,
+
+    marketingConsent:
+      data.marketingConsent,
+
+    title:
+      data.title?.trim() ||
+      undefined,
+
+    photo:
+      data.photo?.trim() ||
+      undefined,
+
+    experienceYears:
+      data.experienceYears,
+
+    district:
+      data.district?.trim() ||
+      undefined,
+
+    languages:
+      normalizeStringArray(
+        data.languages,
+      ),
+
+    specializations:
+      normalizeStringArray(
+        data.specializations,
+      ),
+
+    pujaTypes:
+      normalizeStringArray(
+        data.pujaTypes,
+      ),
+
+    associatedWith:
+      data.associatedWith?.trim() ||
+      undefined,
+
+    about:
+      data.about?.trim() ||
+      undefined,
+
+    availability:
+      data.availability?.trim() ||
+      undefined,
+
+    serviceAreas:
+      normalizeStringArray(
+        data.serviceAreas,
+      ),
+
+    services:
+      data.services?.map(
+        (service) => ({
+          ...service,
+          name:
+            service.name.trim(),
+          description:
+            service.description
+              ?.trim() ||
+            undefined,
+        }),
+      ),
+
+    designation:
+      data.designation?.trim() ||
+      undefined,
+
+    organizationName:
+      data.organizationName?.trim() ||
+      undefined,
+  };
 }
 
 /*
 |--------------------------------------------------------------------------
-| Default Bookings
+| Default Data
 |--------------------------------------------------------------------------
 */
 
-const DEFAULT_BOOKINGS: Booking[] =
-  [
-    {
-      id: "DD-2481",
-      kind: "Puja Enquiry",
-      title:
-        "Satyanarayan Katha — Home",
-      date: "2026-09-02",
-      status: "Confirmed",
-      detail:
-        "Pandit assigned · Varanasi",
-    },
-    {
-      id: "DD-2510",
-      kind: "Yatra Enquiry",
-      title:
-        "Kashi · Ayodhya · Prayagraj 5D",
-      date: "2026-09-05",
-      status: "In progress",
-      detail:
-        "2 travellers · Oct batch",
-    },
-  ];
+const DEFAULT_BOOKINGS: Booking[] = [
+  {
+    id: "DD-2481",
+    kind: "Puja Enquiry",
+    title:
+      "Satyanarayan Katha — Home",
+    date: "2026-09-02",
+    status: "Confirmed",
+    detail:
+      "Pandit assigned · Varanasi",
+  },
+  {
+    id: "DD-2510",
+    kind: "Yatra Enquiry",
+    title:
+      "Kashi · Ayodhya · Prayagraj 5D",
+    date: "2026-09-05",
+    status:
+      "In progress",
+    detail:
+      "2 travellers · Oct batch",
+  },
+];
 
-/*
-|--------------------------------------------------------------------------
-| Default Notifications
-|--------------------------------------------------------------------------
-*/
-
-const DEFAULT_NOTIFICATIONS: Notification[] =
-  [
+const DEFAULT_NOTIFICATIONS:
+  Notification[] = [
     {
       id: "n1",
       text:
@@ -605,48 +986,7 @@ const DEFAULT_NOTIFICATIONS: Notification[] =
 
 /*
 |--------------------------------------------------------------------------
-| Data Sanitizers
-|--------------------------------------------------------------------------
-*/
-
-function trimText(
-  value: string,
-): string {
-  return value.trim();
-}
-
-function normalizeNullableText(
-  value:
-    | string
-    | null
-    | undefined,
-): string | null {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return null;
-  }
-
-  const cleaned =
-    value.trim();
-
-  return cleaned || null;
-}
-
-function isValidPhone(
-  phone: string,
-): boolean {
-  return (
-    /^[+0-9()\-\s]{7,20}$/.test(
-      phone,
-    )
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| App Provider
+| Provider
 |--------------------------------------------------------------------------
 */
 
@@ -657,37 +997,43 @@ export function AppProvider({
 }) {
   /*
    * ----------------------------------------------------------------------
-   * Authentication State
+   * Authentication
    * ----------------------------------------------------------------------
    */
 
   const [
     user,
     setUser,
-  ] = useState<User | null>(null);
+  ] =
+    useState<User | null>(
+      null,
+    );
 
   const [
     isLoading,
     setIsLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   const [
     authError,
     setAuthError,
-  ] = useState<string | null>(
-    null,
-  );
+  ] =
+    useState<string | null>(
+      null,
+    );
 
   /*
    * ----------------------------------------------------------------------
-   * Profile Update State
+   * Profile
    * ----------------------------------------------------------------------
    */
 
   const [
     isProfileUpdating,
     setIsProfileUpdating,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   /*
    * ----------------------------------------------------------------------
@@ -698,24 +1044,24 @@ export function AppProvider({
   const [
     savedTemples,
     setSavedTemples,
-  ] = useState<string[]>(
-    () =>
-      loadStoredValue<string[]>(
-        "dd_saved_t",
-        [],
-      ),
-  );
+  ] =
+    useState<string[]>(
+      () =>
+        loadStoredStringArray(
+          "dd_saved_t",
+        ),
+    );
 
   const [
     savedPlaces,
     setSavedPlaces,
-  ] = useState<string[]>(
-    () =>
-      loadStoredValue<string[]>(
-        "dd_saved_p",
-        [],
-      ),
-  );
+  ] =
+    useState<string[]>(
+      () =>
+        loadStoredStringArray(
+          "dd_saved_p",
+        ),
+    );
 
   /*
    * ----------------------------------------------------------------------
@@ -726,13 +1072,16 @@ export function AppProvider({
   const [
     bookings,
     setBookings,
-  ] = useState<Booking[]>(
-    () =>
-      loadStoredValue<Booking[]>(
-        "dd_bookings",
-        DEFAULT_BOOKINGS,
-      ),
-  );
+  ] =
+    useState<Booking[]>(
+      () =>
+        loadStoredValue<
+          Booking[]
+        >(
+          "dd_bookings",
+          DEFAULT_BOOKINGS,
+        ),
+    );
 
   /*
    * ----------------------------------------------------------------------
@@ -742,19 +1091,20 @@ export function AppProvider({
 
   const [
     notifications,
-  ] = useState<Notification[]>(
-    () =>
-      loadStoredValue<
-        Notification[]
-      >(
-        "dd_notif",
-        DEFAULT_NOTIFICATIONS,
-      ),
-  );
+  ] =
+    useState<Notification[]>(
+      () =>
+        loadStoredValue<
+          Notification[]
+        >(
+          "dd_notif",
+          DEFAULT_NOTIFICATIONS,
+        ),
+    );
 
   /*
    * ----------------------------------------------------------------------
-   * Persist Saved Temples
+   * Persist Local Data
    * ----------------------------------------------------------------------
    */
 
@@ -765,24 +1115,12 @@ export function AppProvider({
     );
   }, [savedTemples]);
 
-  /*
-   * ----------------------------------------------------------------------
-   * Persist Saved Places
-   * ----------------------------------------------------------------------
-   */
-
   useEffect(() => {
     saveStoredValue(
       "dd_saved_p",
       savedPlaces,
     );
   }, [savedPlaces]);
-
-  /*
-   * ----------------------------------------------------------------------
-   * Persist Bookings
-   * ----------------------------------------------------------------------
-   */
 
   useEffect(() => {
     saveStoredValue(
@@ -793,60 +1131,83 @@ export function AppProvider({
 
   /*
    * ----------------------------------------------------------------------
-   * Refresh Authenticated User
+   * Refresh User
    * ----------------------------------------------------------------------
    */
 
   const refreshUser =
     useCallback(
-      async (): Promise<User | null> => {
+      async (): Promise<
+        User | null
+      > => {
         try {
           const response =
             await apiFetch<AuthApiResponse>(
               "/api/auth/me",
             );
 
+          const normalizedUser =
+            normalizeUser(
+              response.user,
+            );
+
           if (
             response.authenticated &&
-            response.user &&
-            isValidUser(
-              response.user,
-            )
+            normalizedUser
           ) {
             setUser(
-              response.user,
+              normalizedUser,
             );
 
             setAuthError(null);
 
-            return response.user;
+            return normalizedUser;
           }
 
           /*
-           * No active session is a normal state.
+           * Backend explicitly says there is no authenticated session.
            */
           setUser(null);
           setAuthError(null);
 
           return null;
         } catch (error) {
+          const apiError =
+            error as ApiError;
+
           /*
-           * A failed session check means we should not keep a stale
-           * frontend authentication state.
+           * 401/403 means the session is no longer valid.
            */
-          setUser(null);
+          if (
+            apiError.status ===
+              401 ||
+            apiError.status ===
+              403
+          ) {
+            setUser(null);
+            setAuthError(
+              error instanceof
+                Error
+                ? error.message
+                : "Your session has expired.",
+            );
 
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Unable to verify your session.";
+            return null;
+          }
 
-          setAuthError(message);
+          /*
+           * A temporary network/server problem should not destroy the
+           * current frontend authentication state.
+           */
+          console.error(
+            "refreshUser failed:",
+            error,
+          );
 
-          return null;
+          return user;
         }
       },
-      [],
+      [user],
     );
 
   /*
@@ -856,7 +1217,8 @@ export function AppProvider({
    */
 
   useEffect(() => {
-    let mounted = true;
+    let mounted =
+      true;
 
     const checkSession =
       async () => {
@@ -872,15 +1234,17 @@ export function AppProvider({
             return;
           }
 
+          const normalizedUser =
+            normalizeUser(
+              response.user,
+            );
+
           if (
             response.authenticated &&
-            response.user &&
-            isValidUser(
-              response.user,
-            )
+            normalizedUser
           ) {
             setUser(
-              response.user,
+              normalizedUser,
             );
 
             setAuthError(null);
@@ -893,12 +1257,17 @@ export function AppProvider({
             return;
           }
 
+          /*
+           * At initial app boot we do not yet know whether a session
+           * exists, so don't assume authentication on a failed request.
+           */
           setUser(null);
 
           setAuthError(
-            error instanceof Error
+            error instanceof
+              Error
               ? error.message
-              : "Unable to connect to the authentication server.",
+              : "Unable to verify your session.",
           );
         } finally {
           if (mounted) {
@@ -936,9 +1305,31 @@ export function AppProvider({
         const password =
           credentials.password;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Local validation
+        |--------------------------------------------------------------------------
+        */
+
         if (!email) {
           const message =
             "Email address is required.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        if (
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+            email,
+          )
+        ) {
+          const message =
+            "Please enter a valid email address.";
 
           setAuthError(message);
           setIsLoading(false);
@@ -973,24 +1364,29 @@ export function AppProvider({
               },
             );
 
-          if (
-            !response.user ||
-            !isValidUser(
+          const normalizedUser =
+            normalizeUser(
               response.user,
-            )
+            );
+
+          if (
+            !normalizedUser
           ) {
             throw new Error(
-              "Login succeeded but no valid user account was returned.",
+              "Login succeeded but the server did not return a valid user account.",
             );
           }
 
+          /*
+           * Server is the source of truth.
+           */
           setUser(
-            response.user,
+            normalizedUser,
           );
 
           setAuthError(null);
 
-          return response.user;
+          return normalizedUser;
         } catch (error) {
           const message =
             error instanceof Error
@@ -1000,7 +1396,9 @@ export function AppProvider({
           setUser(null);
           setAuthError(message);
 
-          throw new Error(message);
+          throw new Error(
+            message,
+          );
         } finally {
           setIsLoading(false);
         }
@@ -1026,6 +1424,156 @@ export function AppProvider({
         setAuthError(null);
         setIsLoading(true);
 
+        const normalized =
+          normalizeRegisterData(
+            data,
+          );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Common validation
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          !normalized.name
+        ) {
+          const message =
+            "Name is required.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        if (
+          !normalized.email
+        ) {
+          const message =
+            "Email address is required.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        if (
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+            normalized.email,
+          )
+        ) {
+          const message =
+            "Please enter a valid email address.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        if (
+          !normalized.password
+        ) {
+          const message =
+            "Password is required.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        if (
+          normalized.password.length <
+          8
+        ) {
+          const message =
+            "Password must contain at least 8 characters.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phone validation
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          normalized.phone &&
+          !isValidPhone(
+            normalized.phone,
+          )
+        ) {
+          const message =
+            "Please enter a valid phone number.";
+
+          setAuthError(message);
+          setIsLoading(false);
+
+          throw new Error(
+            message,
+          );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pandit validation
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          normalized.role ===
+          "pandit"
+        ) {
+          if (
+            normalized.experienceYears !==
+              undefined &&
+            normalized.experienceYears !==
+              ""
+          ) {
+            const experience =
+              Number(
+                normalized.experienceYears,
+              );
+
+            if (
+              !Number.isInteger(
+                experience,
+              ) ||
+              experience < 0 ||
+              experience > 100
+            ) {
+              const message =
+                "Pandit experience must be between 0 and 100 years.";
+
+              setAuthError(
+                message,
+              );
+              setIsLoading(false);
+
+              throw new Error(
+                message,
+              );
+            }
+          }
+        }
+
         try {
           const response =
             await apiFetch<AuthApiResponse>(
@@ -1033,19 +1581,21 @@ export function AppProvider({
               {
                 method: "POST",
                 body: JSON.stringify(
-                  data,
+                  normalized,
                 ),
               },
             );
 
-          if (
-            !response.user ||
-            !isValidUser(
+          const normalizedUser =
+            normalizeUser(
               response.user,
-            )
+            );
+
+          if (
+            !normalizedUser
           ) {
             throw new Error(
-              "Registration succeeded but no valid user account was returned.",
+              "Registration succeeded but the server did not return a valid user account.",
             );
           }
 
@@ -1054,17 +1604,19 @@ export function AppProvider({
               response.authenticated,
             );
 
+          /*
+           * Visitor is normally authenticated immediately.
+           *
+           * Pandit / Temple Manager may receive authenticated=false
+           * while waiting for admin approval.
+           */
           if (
             authenticated
           ) {
             setUser(
-              response.user,
+              normalizedUser,
             );
           } else {
-            /*
-             * Professional accounts are currently registered as
-             * pending and should not be treated as authenticated.
-             */
             setUser(null);
           }
 
@@ -1073,7 +1625,7 @@ export function AppProvider({
           return {
             authenticated,
             user:
-              response.user,
+              normalizedUser,
             message:
               response.message ||
               "Registration successful.",
@@ -1086,7 +1638,9 @@ export function AppProvider({
 
           setAuthError(message);
 
-          throw new Error(message);
+          throw new Error(
+            message,
+          );
         } finally {
           setIsLoading(false);
         }
@@ -1114,8 +1668,7 @@ export function AppProvider({
           );
         } catch (error) {
           /*
-           * The local session state must still be cleared even when
-           * the backend is unavailable.
+           * Local session state must always be cleared.
            */
           console.error(
             "Logout request failed:",
@@ -1133,14 +1686,7 @@ export function AppProvider({
 
   /*
    * ----------------------------------------------------------------------
-   * Profile Update
-   * ----------------------------------------------------------------------
-   *
-   * Backend contract:
-   *
-   * PATCH /api/auth/profile
-   *
-   * Email is intentionally NOT accepted.
+   * Update Profile
    * ----------------------------------------------------------------------
    */
 
@@ -1160,28 +1706,31 @@ export function AppProvider({
           );
         }
 
-        /*
-         * Build a clean payload.
-         */
         const payload: ProfileUpdateInput =
           {};
 
         /*
-         * Name
-         */
+        |--------------------------------------------------------------------------
+        | Name
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.name !==
           undefined
         ) {
           payload.name =
-            trimText(
+            cleanText(
               update.name,
             );
         }
 
         /*
-         * Phone
-         */
+        |--------------------------------------------------------------------------
+        | Phone
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.phone !==
           undefined
@@ -1190,79 +1739,95 @@ export function AppProvider({
             update.phone ===
             null
               ? null
-              : trimText(
+              : cleanText(
                   update.phone,
                 );
         }
 
         /*
-         * City
-         */
+        |--------------------------------------------------------------------------
+        | City
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.city !==
           undefined
         ) {
           payload.city =
-            normalizeNullableText(
+            cleanOptionalText(
               update.city,
             );
         }
 
         /*
-         * State
-         */
+        |--------------------------------------------------------------------------
+        | State
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.state !==
           undefined
         ) {
           payload.state =
-            normalizeNullableText(
+            cleanOptionalText(
               update.state,
             );
         }
 
         /*
-         * Country
-         */
+        |--------------------------------------------------------------------------
+        | Country
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.country !==
           undefined
         ) {
           payload.country =
-            normalizeNullableText(
+            cleanOptionalText(
               update.country,
             );
         }
 
         /*
-         * Avatar
-         */
+        |--------------------------------------------------------------------------
+        | Avatar
+        |--------------------------------------------------------------------------
+        */
+
         if (
           update.avatar !==
           undefined
         ) {
           payload.avatar =
-            normalizeNullableText(
+            cleanOptionalText(
               update.avatar,
             );
         }
 
         /*
-         * Nothing changed.
-         */
+        |--------------------------------------------------------------------------
+        | No changes
+        |--------------------------------------------------------------------------
+        */
+
         if (
           Object.keys(
             payload,
           ).length === 0
         ) {
-          setAuthError(null);
-
           return user;
         }
 
         /*
-         * Validate name.
-         */
+        |--------------------------------------------------------------------------
+        | Name validation
+        |--------------------------------------------------------------------------
+        */
+
         if (
           payload.name !==
             undefined &&
@@ -1296,8 +1861,11 @@ export function AppProvider({
         }
 
         /*
-         * Validate phone.
-         */
+        |--------------------------------------------------------------------------
+        | Phone validation
+        |--------------------------------------------------------------------------
+        */
+
         if (
           payload.phone &&
           !isValidPhone(
@@ -1314,11 +1882,9 @@ export function AppProvider({
           );
         }
 
-        /*
-         * Field length protection.
-         */
         if (
-          payload.phone &&
+          typeof payload.phone ===
+            "string" &&
           payload.phone.length >
             30
         ) {
@@ -1332,8 +1898,15 @@ export function AppProvider({
           );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Field lengths
+        |--------------------------------------------------------------------------
+        */
+
         if (
-          payload.city &&
+          typeof payload.city ===
+            "string" &&
           payload.city.length >
             120
         ) {
@@ -1348,7 +1921,8 @@ export function AppProvider({
         }
 
         if (
-          payload.state &&
+          typeof payload.state ===
+            "string" &&
           payload.state.length >
             120
         ) {
@@ -1363,7 +1937,8 @@ export function AppProvider({
         }
 
         if (
-          payload.country &&
+          typeof payload.country ===
+            "string" &&
           payload.country.length >
             100
         ) {
@@ -1378,7 +1953,8 @@ export function AppProvider({
         }
 
         if (
-          payload.avatar &&
+          typeof payload.avatar ===
+            "string" &&
           payload.avatar.length >
             500
         ) {
@@ -1409,27 +1985,26 @@ export function AppProvider({
               },
             );
 
-          if (
-            !response.user ||
-            !isValidUser(
+          const normalizedUser =
+            normalizeUser(
               response.user,
-            )
+            );
+
+          if (
+            !normalizedUser
           ) {
             throw new Error(
               "Profile update succeeded but the server did not return a valid updated user.",
             );
           }
 
-          /*
-           * Server response is the source of truth.
-           */
           setUser(
-            response.user,
+            normalizedUser,
           );
 
           setAuthError(null);
 
-          return response.user;
+          return normalizedUser;
         } catch (error) {
           const message =
             error instanceof Error
@@ -1438,7 +2013,9 @@ export function AppProvider({
 
           setAuthError(message);
 
-          throw new Error(message);
+          throw new Error(
+            message,
+          );
         } finally {
           setIsProfileUpdating(
             false,
@@ -1461,7 +2038,7 @@ export function AppProvider({
 
   /*
    * ----------------------------------------------------------------------
-   * Role Helper
+   * Role Helpers
    * ----------------------------------------------------------------------
    */
 
@@ -1480,6 +2057,23 @@ export function AppProvider({
       },
       [user],
     );
+
+  /*
+   * ----------------------------------------------------------------------
+   * Current Dashboard Path
+   * ----------------------------------------------------------------------
+   */
+
+  const getDashboardPath =
+    useCallback(() => {
+      if (!user) {
+        return "/login";
+      }
+
+      return getDashboardPathForRole(
+        user.role,
+      );
+    }, [user]);
 
   /*
    * ----------------------------------------------------------------------
@@ -1509,7 +2103,7 @@ export function AppProvider({
 
   /*
    * ----------------------------------------------------------------------
-   * Toggle Saved Content
+   * Toggle Save
    * ----------------------------------------------------------------------
    */
 
@@ -1594,12 +2188,13 @@ export function AppProvider({
           "id" | "status"
         >,
       ) => {
-        const newBooking: Booking =
-          {
-            ...booking,
-            id: `DD-${Date.now()}`,
-            status: "Received",
-          };
+        const newBooking:
+          Booking = {
+          ...booking,
+          id: `DD-${Date.now()}`,
+          status:
+            "Received",
+        };
 
         setBookings(
           (current) => [
@@ -1613,7 +2208,7 @@ export function AppProvider({
 
   /*
    * ----------------------------------------------------------------------
-   * Memoized Context Value
+   * Memoized Context
    * ----------------------------------------------------------------------
    */
 
@@ -1643,16 +2238,11 @@ export function AppProvider({
         clearAuthError,
 
         /*
-         * Profile
-         */
-        updateProfile,
-
-        isProfileUpdating,
-
-        /*
-         * Role helpers
+         * Roles
          */
         hasRole,
+
+        getDashboardPath,
 
         isVisitor,
 
@@ -1665,7 +2255,14 @@ export function AppProvider({
         isSuperAdmin,
 
         /*
-         * Saved content
+         * Profile
+         */
+        updateProfile,
+
+        isProfileUpdating,
+
+        /*
+         * Saved
          */
         savedTemples,
 
@@ -1694,14 +2291,15 @@ export function AppProvider({
         logout,
         refreshUser,
         clearAuthError,
-        updateProfile,
-        isProfileUpdating,
         hasRole,
+        getDashboardPath,
         isVisitor,
         isPandit,
         isTempleManager,
         isSales,
         isSuperAdmin,
+        updateProfile,
+        isProfileUpdating,
         savedTemples,
         savedPlaces,
         toggleSave,

@@ -2,7 +2,6 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-
 import {
   BrowserRouter,
   Navigate,
@@ -12,7 +11,6 @@ import {
 } from "react-router-dom";
 
 import Layout from "./components/Layout";
-
 import {
   AppProvider,
   useApp,
@@ -86,12 +84,6 @@ import {
 import Dashboard from "./pages/Dashboard";
 
 /* ============================================================================
- * PANDIT
- * ========================================================================== */
-
-import PanditDashboard from "./pages/PanditDashboard";
-
-/* ============================================================================
  * ADMIN
  * ========================================================================== */
 
@@ -104,36 +96,15 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 /* ============================================================================
- * SUPPORTED ROLES
- * ========================================================================== */
-
-type SupportedRole =
-  | "visitor"
-  | "pandit"
-  | "temple_manager"
-  | "sales"
-  | "super_admin";
-
-/* ============================================================================
- * ROLE HELPERS
- * ========================================================================== */
-
-function isSupportedRole(
-  role: unknown,
-): role is SupportedRole {
-  return (
-    role === "visitor" ||
-    role === "pandit" ||
-    role === "temple_manager" ||
-    role === "sales" ||
-    role === "super_admin"
-  );
-}
-
-/* ============================================================================
  * SCROLL TO TOP
  * ========================================================================== */
 
+/**
+ * Keeps the user at the top whenever the route changes.
+ *
+ * Search params are included because Panchang and other pages may use
+ * query-string driven state.
+ */
 function ScrollToTop() {
   const {
     pathname,
@@ -155,14 +126,33 @@ function ScrollToTop() {
 }
 
 /* ============================================================================
- * AUTH / ROLE GUARD
+ * AUTH / ROLE GUARDS
  * ========================================================================== */
+
+type SupportedRole =
+  | "visitor"
+  | "pandit"
+  | "temple_manager"
+  | "sales"
+  | "super_admin";
 
 type RequireRoleProps = {
   roles: SupportedRole[];
   children: ReactNode;
 };
 
+/**
+ * Protected role-based route guard.
+ *
+ * Behaviour:
+ * - While auth state is loading -> lightweight loading screen
+ * - No authenticated user -> /login
+ * - Authenticated but wrong role -> /
+ * - Correct role -> render requested page
+ *
+ * This guard is intentionally frontend navigation protection only.
+ * The real security boundary remains the Express backend middleware.
+ */
 function RequireRole({
   roles,
   children,
@@ -172,15 +162,11 @@ function RequireRole({
     isLoading,
   } = useApp();
 
-  /* --------------------------------------------------------------------------
-   * SESSION LOADING
-   * ------------------------------------------------------------------------ */
-
   if (isLoading) {
     return (
       <div className="grid min-h-screen place-items-center bg-[#fdfaf5] px-5">
         <div className="text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-orange-100">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-orange-100 text-orange-800">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" />
           </div>
 
@@ -189,18 +175,13 @@ function RequireRole({
           </h1>
 
           <p className="mt-1 text-sm text-stone-500">
-            Please wait while
-            DivyaDhara verifies your
-            account.
+            Please wait while DivyaDhara
+            verifies your account.
           </p>
         </div>
       </div>
     );
   }
-
-  /* --------------------------------------------------------------------------
-   * NOT LOGGED IN
-   * ------------------------------------------------------------------------ */
 
   if (!user) {
     return (
@@ -211,11 +192,11 @@ function RequireRole({
     );
   }
 
-  /* --------------------------------------------------------------------------
-   * INVALID ROLE
-   * ------------------------------------------------------------------------ */
-
-  if (!isSupportedRole(user.role)) {
+  if (
+    !roles.includes(
+      user.role as SupportedRole,
+    )
+  ) {
     return (
       <Navigate
         to="/"
@@ -224,28 +205,11 @@ function RequireRole({
     );
   }
 
-  /* --------------------------------------------------------------------------
-   * WRONG ROLE
-   * ------------------------------------------------------------------------ */
-
-  if (!roles.includes(user.role)) {
-    return (
-      <Navigate
-        to="/"
-        replace
-      />
-    );
-  }
-
-  /* --------------------------------------------------------------------------
-   * AUTHORIZED
-   * ------------------------------------------------------------------------ */
-
-  return <>{children}</>;
+  return children;
 }
 
 /* ============================================================================
- * APP ROUTES
+ * ROUTES
  * ========================================================================== */
 
 function AppRoutes() {
@@ -255,7 +219,7 @@ function AppRoutes() {
 
       <Routes>
         {/* ====================================================================
-         * PUBLIC WEBSITE
+         * PUBLIC WEBSITE LAYOUT
          * ================================================================== */}
 
         <Route element={<Layout />}>
@@ -330,15 +294,6 @@ function AppRoutes() {
             element={<PanditDetail />}
           />
 
-          {/* ------------------------------------------------------------------
-           * PUBLIC LEGACY PANDIT PROFILE
-           *
-           * IMPORTANT:
-           * /pandit/dashboard has its own exact protected route below.
-           * React Router ranks the static protected route above this dynamic
-           * :slug route, so "dashboard" will NOT be treated as a slug.
-           * ---------------------------------------------------------------- */}
-
           <Route
             path="pandit/:slug"
             element={
@@ -350,7 +305,7 @@ function AppRoutes() {
           />
 
           {/* ------------------------------------------------------------------
-           * ASHRAMS
+           * DHARMA — ASHRAMS
            * ---------------------------------------------------------------- */}
 
           <Route
@@ -364,7 +319,7 @@ function AppRoutes() {
           />
 
           {/* ------------------------------------------------------------------
-           * COURSES
+           * LEARN — COURSES
            * ---------------------------------------------------------------- */}
 
           <Route
@@ -378,7 +333,7 @@ function AppRoutes() {
           />
 
           {/* ------------------------------------------------------------------
-           * PANCHANG
+           * PANCHANG / CALENDAR / RASHIFAL / KUNDLI / GOCHAR
            * ---------------------------------------------------------------- */}
 
           <Route
@@ -555,7 +510,12 @@ function AppRoutes() {
           />
 
           {/* ------------------------------------------------------------------
-           * VISITOR DASHBOARD
+           * VISITOR ACCOUNT
+           * ----------------------------------------------------------------
+           *
+           * Dashboard component itself already handles the no-user case.
+           * We keep this route inside the public Layout because the visitor
+           * dashboard belongs to the normal website shell.
            * ---------------------------------------------------------------- */}
 
           <Route
@@ -565,26 +525,19 @@ function AppRoutes() {
         </Route>
 
         {/* ====================================================================
-         * PANDIT DASHBOARD
+         * SUPER ADMIN AREA
          *
-         * THIS IS THE IMPORTANT FIX
-         * ================================================================== */}
-
-        <Route
-          path="pandit/dashboard"
-          element={
-            <RequireRole
-              roles={[
-                "pandit",
-              ]}
-            >
-              <PanditDashboard />
-            </RequireRole>
-          }
-        />
-
-        {/* ====================================================================
-         * SUPER ADMIN
+         * IMPORTANT:
+         * This route is deliberately OUTSIDE the public Layout.
+         *
+         * AdminDashboard has its own:
+         * - header
+         * - sidebar
+         * - navigation
+         * - authentication UX
+         *
+         * Backend still protects /api/admin/* with:
+         * requireAuth + requireRole("super_admin")
          * ================================================================== */}
 
         <Route
@@ -600,6 +553,8 @@ function AppRoutes() {
           }
         />
 
+        {/* Friendly admin root URL */}
+
         <Route
           path="admin"
           element={
@@ -611,75 +566,9 @@ function AppRoutes() {
         />
 
         {/* ====================================================================
-         * TEMPLE MANAGER
-         * ================================================================== */}
-
-        <Route
-          path="temple-manager/dashboard"
-          element={
-            <RequireRole
-              roles={[
-                "temple_manager",
-              ]}
-            >
-              <div className="grid min-h-screen place-items-center bg-[#fdfaf5] px-5">
-                <div className="rounded-3xl border border-orange-900/10 bg-white p-8 text-center shadow-xl">
-                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-orange-100 text-orange-700">
-                    <span className="text-2xl">
-                      ॐ
-                    </span>
-                  </div>
-
-                  <h1 className="mt-5 text-2xl font-bold text-[#2a1a10]">
-                    Temple Manager Dashboard
-                  </h1>
-
-                  <p className="mt-2 text-sm text-stone-500">
-                    Temple Manager module is
-                    being prepared.
-                  </p>
-                </div>
-              </div>
-            </RequireRole>
-          }
-        />
-
-        {/* ====================================================================
-         * SALES
-         * ================================================================== */}
-
-        <Route
-          path="sales/dashboard"
-          element={
-            <RequireRole
-              roles={[
-                "sales",
-              ]}
-            >
-              <div className="grid min-h-screen place-items-center bg-[#fdfaf5] px-5">
-                <div className="rounded-3xl border border-orange-900/10 bg-white p-8 text-center shadow-xl">
-                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-orange-100 text-orange-700">
-                    <span className="text-2xl">
-                      ॐ
-                    </span>
-                  </div>
-
-                  <h1 className="mt-5 text-2xl font-bold text-[#2a1a10]">
-                    Sales Dashboard
-                  </h1>
-
-                  <p className="mt-2 text-sm text-stone-500">
-                    Sales module is being
-                    prepared.
-                  </p>
-                </div>
-              </div>
-            </RequireRole>
-          }
-        />
-
-        {/* ====================================================================
          * 404
+         *
+         * This must remain last.
          * ================================================================== */}
 
         <Route

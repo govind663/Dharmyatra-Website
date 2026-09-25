@@ -2,39 +2,51 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
+
 import {
   Link,
   useNavigate,
 } from "react-router-dom";
+
 import {
   ArrowRight,
+  Building2,
+  CheckCircle2,
   Eye,
   EyeOff,
+  GraduationCap,
   Lock,
   LogIn,
   Mail,
   MapPin,
   Phone,
   ShieldCheck,
+  Sparkles,
   User,
   UserPlus,
-  CheckCircle2,
-  Sparkles,
-  GraduationCap,
-  Building2,
 } from "lucide-react";
 
-import { useSEO } from "../lib/seo";
+import {
+  useApp,
+  getDashboardPathForRole,
+  type RegisterInput,
+} from "../context/AppContext";
+
+import {
+  showError,
+  showWarning,
+} from "../lib/swal";
+
+import {
+  useSEO,
+} from "../lib/seo";
+
 import {
   Breadcrumbs,
   Reveal,
 } from "../components/ui";
-import {
-  useApp,
-  type RegisterInput,
-  type UserRole,
-} from "../context/AppContext";
 
 /*
 |--------------------------------------------------------------------------
@@ -50,7 +62,7 @@ function Shell({
 }: {
   title: string;
   sub: string;
-  children: React.ReactNode;
+  children: ReactNode;
   wide?: boolean;
 }) {
   return (
@@ -80,9 +92,7 @@ function Shell({
         />
 
         <Reveal
-          className={`mt-6 overflow-hidden rounded-[1.75rem] border border-orange-900/10 bg-white shadow-2xl shadow-orange-900/10 ${
-            wide ? "" : ""
-          }`}
+          className="mt-6 overflow-hidden rounded-[1.75rem] border border-orange-900/10 bg-white shadow-2xl shadow-orange-900/10"
         >
           <div className="bg-linear-to-br from-saffron-900 via-saffron-700 to-orange-600 px-7 pb-8 pt-8 text-center text-white md:px-10">
             <p
@@ -112,7 +122,7 @@ function Shell({
 
 /*
 |--------------------------------------------------------------------------
-| Input Classes
+| Input Styles
 |--------------------------------------------------------------------------
 */
 
@@ -124,7 +134,7 @@ const inputWithIconClass =
 
 /*
 |--------------------------------------------------------------------------
-| Role Configuration
+| Public Roles
 |--------------------------------------------------------------------------
 */
 
@@ -140,57 +150,30 @@ type RoleOption = {
   icon: typeof User;
 };
 
-const ROLE_OPTIONS: RoleOption[] = [
-  {
-    role: "visitor",
-    label: "Visitor / Devotee",
-    description:
-      "Explore temples, book pujas, plan yatras and manage enquiries.",
-    icon: User,
-  },
-  {
-    role: "pandit",
-    label: "Pandit / Acharya",
-    description:
-      "Create your profile, list services and receive qualified enquiries.",
-    icon: Sparkles,
-  },
-  {
-    role: "temple_manager",
-    label: "Temple Manager",
-    description:
-      "Represent a temple and manage assigned temple information and enquiries.",
-    icon: Building2,
-  },
-];
-
-/*
-|--------------------------------------------------------------------------
-| Redirect By Role
-|--------------------------------------------------------------------------
-*/
-
-function getDashboardPath(
-  role: UserRole,
-): string {
-  switch (role) {
-    case "pandit":
-      return "/pandit/dashboard";
-
-    case "temple_manager":
-      return "/temple-manager/dashboard";
-
-    case "sales":
-      return "/sales/dashboard";
-
-    case "super_admin":
-      return "/admin/dashboard";
-
-    case "visitor":
-    default:
-      return "/dashboard";
-  }
-}
+const ROLE_OPTIONS: RoleOption[] =
+  [
+    {
+      role: "visitor",
+      label: "Visitor / Devotee",
+      description:
+        "Explore temples, book pujas, plan yatras and manage enquiries.",
+      icon: User,
+    },
+    {
+      role: "pandit",
+      label: "Pandit / Acharya",
+      description:
+        "Create your profile, list services and receive qualified enquiries.",
+      icon: Sparkles,
+    },
+    {
+      role: "temple_manager",
+      label: "Temple Manager",
+      description:
+        "Represent a temple and manage assigned temple information and enquiries.",
+      icon: Building2,
+    },
+  ];
 
 /*
 |--------------------------------------------------------------------------
@@ -214,7 +197,7 @@ export function Login() {
     clearAuthError,
   } = useApp();
 
-  const nav =
+  const navigate =
     useNavigate();
 
   const [
@@ -222,46 +205,113 @@ export function Login() {
     setShowPassword,
   ] = useState(false);
 
-  const [form, setForm] =
-    useState({
-      email: "",
-      password: "",
-    });
+  const [
+    form,
+    setForm,
+  ] = useState({
+    email: "",
+    password: "",
+  });
 
-  const [submitted, setSubmitted] =
-    useState(false);
+  const [
+    submitted,
+    setSubmitted,
+  ] = useState(false);
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
+  /*
+  |--------------------------------------------------------------------------
+  | Submit Login
+  |--------------------------------------------------------------------------
+  */
 
-    clearAuthError();
-    setSubmitted(true);
+  const handleSubmit =
+    async (
+      event: FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
 
-    try {
-      const user =
-        await login({
-          email:
-            form.email.trim(),
-          password:
-            form.password,
-        });
+      clearAuthError();
+      setSubmitted(true);
 
-      nav(
-        getDashboardPath(
-          user.role,
-        ),
-      );
-    } catch {
-      /*
-       * AppContext already stores the
-       * user-facing authentication error.
-       */
-    } finally {
-      setSubmitted(false);
-    }
-  };
+      const email =
+        form.email
+          .trim()
+          .toLowerCase();
+
+      if (!email) {
+        await showWarning(
+          "Email required",
+          "Please enter your email address.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          email,
+        )
+      ) {
+        await showWarning(
+          "Invalid email",
+          "Please enter a valid email address.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (!form.password) {
+        await showWarning(
+          "Password required",
+          "Please enter your password.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      try {
+        const authenticatedUser =
+          await login({
+            email,
+            password:
+              form.password,
+          });
+
+        /*
+        |--------------------------------------------------------------------------
+        | CENTRALIZED ROLE-BASED REDIRECT
+        |--------------------------------------------------------------------------
+        */
+
+        const dashboardPath =
+          getDashboardPathForRole(
+            authenticatedUser.role,
+          );
+
+        navigate(
+          dashboardPath,
+          {
+            replace: true,
+          },
+        );
+      } catch {
+        /*
+         * AppContext already stores the user-facing
+         * authentication error.
+         */
+      } finally {
+        setSubmitted(false);
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Render
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <Shell
@@ -271,21 +321,28 @@ export function Login() {
       {authError && (
         <div
           role="alert"
+          aria-live="polite"
           className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
         >
           <p className="font-bold">
             Login unsuccessful
           </p>
-          <p className="mt-1">
+
+          <p className="mt-1 leading-5">
             {authError}
           </p>
         </div>
       )}
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={
+          handleSubmit
+        }
         className="space-y-4"
+        noValidate
       >
+        {/* Email */}
+
         <div>
           <label
             className="mb-1.5 block text-xs font-bold text-stone-600"
@@ -304,17 +361,22 @@ export function Login() {
             <input
               id="login-email"
               required
+              autoFocus
               autoComplete="email"
               type="email"
+              inputMode="email"
               value={
                 form.email
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 setForm(
                   (current) => ({
                     ...current,
                     email:
-                      event.target
+                      event
+                        .target
                         .value,
                   }),
                 );
@@ -328,6 +390,8 @@ export function Login() {
             />
           </div>
         </div>
+
+        {/* Password */}
 
         <div>
           <label
@@ -357,12 +421,15 @@ export function Login() {
               value={
                 form.password
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 setForm(
                   (current) => ({
                     ...current,
                     password:
-                      event.target
+                      event
+                        .target
                         .value,
                   }),
                 );
@@ -389,13 +456,19 @@ export function Login() {
               }
             >
               {showPassword ? (
-                <EyeOff size={16} />
+                <EyeOff
+                  size={16}
+                />
               ) : (
-                <Eye size={16} />
+                <Eye
+                  size={16}
+                />
               )}
             </button>
           </div>
         </div>
+
+        {/* Submit */}
 
         <button
           type="submit"
@@ -483,18 +556,21 @@ export function Register() {
     clearAuthError,
   } = useApp();
 
-  const nav =
+  const navigate =
     useNavigate();
 
   const [
     selectedRole,
     setSelectedRole,
-  ] = useState<PublicRole>(
-    "visitor",
-  );
+  ] =
+    useState<PublicRole>(
+      "visitor",
+    );
 
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   const [
     showConfirmPassword,
@@ -515,9 +591,6 @@ export function Register() {
     password: "",
     confirmPassword: "",
 
-    /*
-     * Pandit fields
-     */
     title: "",
     experienceYears: "",
     district: "",
@@ -529,18 +602,21 @@ export function Register() {
     availability: "",
     serviceAreas: "",
 
-    /*
-     * Temple Manager fields
-     */
     designation: "",
     organizationName: "",
   });
 
-  const [successMessage, setSuccessMessage] =
-    useState<string | null>(null);
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState<
+    string | null
+  >(null);
 
-  const [submitted, setSubmitted] =
-    useState(false);
+  const [
+    submitted,
+    setSubmitted,
+  ] = useState(false);
 
   const selectedRoleConfig =
     useMemo(
@@ -554,6 +630,12 @@ export function Register() {
       [selectedRole],
     );
 
+  /*
+  |--------------------------------------------------------------------------
+  | Field Update
+  |--------------------------------------------------------------------------
+  */
+
   const updateField = (
     field: keyof typeof form,
     value: string,
@@ -561,7 +643,8 @@ export function Register() {
     setForm(
       (current) => ({
         ...current,
-        [field]: value,
+        [field]:
+          value,
       }),
     );
 
@@ -571,182 +654,368 @@ export function Register() {
     );
   };
 
+  /*
+  |--------------------------------------------------------------------------
+  | CSV
+  |--------------------------------------------------------------------------
+  */
+
   const csvToArray = (
     value: string,
   ): string[] => {
-    return value
-      .split(",")
-      .map((item) =>
-        item.trim(),
-      )
-      .filter(Boolean);
+    return Array.from(
+      new Set(
+        value
+          .split(",")
+          .map(
+            (item) =>
+              item.trim(),
+          )
+          .filter(Boolean),
+      ),
+    );
   };
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
+  /*
+  |--------------------------------------------------------------------------
+  | Register Submit
+  |--------------------------------------------------------------------------
+  */
 
-    clearAuthError();
-    setSuccessMessage(
-      null,
-    );
-    setSubmitted(true);
+  const handleSubmit =
+    async (
+      event: FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
 
-    if (
-      form.password !==
-      form.confirmPassword
-    ) {
-      setSubmitted(false);
-
-      /*
-       * We use AppContext's error slot
-       * so the existing UI remains simple.
-       */
-      alert(
-        "Password and confirm password do not match.",
-      );
-
-      return;
-    }
-
-    if (
-      form.password.length <
-      8
-    ) {
-      setSubmitted(false);
-
-      alert(
-        "Password must contain at least 8 characters.",
-      );
-
-      return;
-    }
-
-    const payload: RegisterInput =
-      {
-        role:
-          selectedRole,
-        name:
-          form.name.trim(),
-        email:
-          form.email.trim(),
-        phone:
-          form.phone.trim(),
-        city:
-          form.city.trim(),
-        state:
-          form.state.trim(),
-        country:
-          form.country.trim() ||
-          "India",
-        password:
-          form.password,
-
-        ...(selectedRole ===
-          "pandit"
-          ? {
-              title:
-                form.title.trim(),
-              experienceYears:
-                form.experienceYears
-                  .trim(),
-              district:
-                form.district.trim(),
-
-              languages:
-                csvToArray(
-                  form.languages,
-                ),
-
-              specializations:
-                csvToArray(
-                  form.specializations,
-                ),
-
-              pujaTypes:
-                csvToArray(
-                  form.pujaTypes,
-                ),
-
-              associatedWith:
-                form.associatedWith.trim(),
-
-              about:
-                form.about.trim(),
-
-              availability:
-                form.availability.trim(),
-
-              serviceAreas:
-                csvToArray(
-                  form.serviceAreas,
-                ),
-            }
-          : {}),
-
-        ...(selectedRole ===
-          "temple_manager"
-          ? {
-              designation:
-                form.designation.trim(),
-
-              organizationName:
-                form.organizationName.trim(),
-            }
-          : {}),
-      };
-
-    try {
-      const response =
-        await register(
-          payload,
-        );
-
+      clearAuthError();
       setSuccessMessage(
-        response.message,
+        null,
       );
+      setSubmitted(true);
+
+      const name =
+        form.name.trim();
+
+      const email =
+        form.email
+          .trim()
+          .toLowerCase();
+
+      const phone =
+        form.phone.trim();
+
+      const city =
+        form.city.trim();
+
+      const password =
+        form.password;
+
+      const confirmPassword =
+        form.confirmPassword;
 
       /*
-       * Visitor account is active immediately.
-       * Professional accounts remain pending until
-       * admin approval.
-       */
-      if (
-        response.authenticated
-      ) {
-        nav(
-          getDashboardPath(
-            response.user
-              .role,
-          ),
+      |--------------------------------------------------------------------------
+      | Local validation
+      |--------------------------------------------------------------------------
+      */
+
+      if (!name) {
+        await showWarning(
+          "Name required",
+          "Please enter your full name.",
         );
 
+        setSubmitted(false);
+        return;
+      }
+
+      if (!email) {
+        await showWarning(
+          "Email required",
+          "Please enter your email address.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          email,
+        )
+      ) {
+        await showWarning(
+          "Invalid email",
+          "Please enter a valid email address.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (!phone) {
+        await showWarning(
+          "Mobile number required",
+          "Please enter your mobile number.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (
+        !/^[+0-9()\-\s]{7,20}$/.test(
+          phone,
+        )
+      ) {
+        await showWarning(
+          "Invalid mobile number",
+          "Please enter a valid mobile number.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (!city) {
+        await showWarning(
+          "City required",
+          "Please enter your city.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (
+        password.length <
+        8
+      ) {
+        await showWarning(
+          "Weak password",
+          "Password must contain at least 8 characters.",
+        );
+
+        setSubmitted(false);
+        return;
+      }
+
+      if (
+        password !==
+        confirmPassword
+      ) {
+        await showWarning(
+          "Passwords do not match",
+          "Password and confirm password must be the same.",
+        );
+
+        setSubmitted(false);
         return;
       }
 
       /*
-       * For Pandit / Temple Manager:
-       * stay on register screen and show
-       * the pending approval message.
-       */
-      setForm(
-        (current) => ({
-          ...current,
-          password: "",
-          confirmPassword: "",
-        }),
-      );
-    } catch {
+      |--------------------------------------------------------------------------
+      | Pandit-specific validation
+      |--------------------------------------------------------------------------
+      */
+
+      if (
+        selectedRole ===
+        "pandit"
+      ) {
+        const experience =
+          form.experienceYears.trim();
+
+        if (
+          experience
+        ) {
+          const experienceNumber =
+            Number(
+              experience,
+            );
+
+          if (
+            !Number.isInteger(
+              experienceNumber,
+            ) ||
+            experienceNumber <
+              0 ||
+            experienceNumber >
+              100
+          ) {
+            await showWarning(
+              "Invalid experience",
+              "Pandit experience must be between 0 and 100 years.",
+            );
+
+            setSubmitted(false);
+            return;
+          }
+        }
+      }
+
       /*
-       * AppContext exposes the error.
-       */
-    } finally {
-      setSubmitted(
-        false,
-      );
-    }
-  };
+      |--------------------------------------------------------------------------
+      | Build Payload
+      |--------------------------------------------------------------------------
+      */
+
+      const payload: RegisterInput =
+        {
+          role:
+            selectedRole,
+
+          name,
+
+          email,
+
+          phone,
+
+          city,
+
+          state:
+            form.state.trim(),
+
+          country:
+            form.country.trim() ||
+            "India",
+
+          password,
+
+          ...(selectedRole ===
+          "pandit"
+            ? {
+                title:
+                  form.title.trim(),
+
+                experienceYears:
+                  form.experienceYears.trim(),
+
+                district:
+                  form.district.trim(),
+
+                languages:
+                  csvToArray(
+                    form.languages,
+                  ),
+
+                specializations:
+                  csvToArray(
+                    form.specializations,
+                  ),
+
+                pujaTypes:
+                  csvToArray(
+                    form.pujaTypes,
+                  ),
+
+                associatedWith:
+                  form.associatedWith.trim(),
+
+                about:
+                  form.about.trim(),
+
+                availability:
+                  form.availability.trim(),
+
+                serviceAreas:
+                  csvToArray(
+                    form.serviceAreas,
+                  ),
+              }
+            : {}),
+
+          ...(selectedRole ===
+          "temple_manager"
+            ? {
+                designation:
+                  form.designation.trim(),
+
+                organizationName:
+                  form.organizationName.trim(),
+              }
+            : {}),
+        };
+
+      /*
+      |--------------------------------------------------------------------------
+      | API Registration
+      |--------------------------------------------------------------------------
+      */
+
+      try {
+        const response =
+          await register(
+            payload,
+          );
+
+        setSuccessMessage(
+          response.message,
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active visitor
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          response.authenticated
+        ) {
+          navigate(
+            getDashboardPathForRole(
+              response.user
+                .role,
+            ),
+            {
+              replace:
+                true,
+            },
+          );
+
+          return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pending professional account
+        |--------------------------------------------------------------------------
+        |
+        | Pandit / Temple Manager remain on this page because they need
+        | admin approval before login.
+        |
+        */
+
+        setForm(
+          (current) => ({
+            ...current,
+            password: "",
+            confirmPassword:
+              "",
+          }),
+        );
+      } catch (error) {
+        /*
+         * AppContext controls authError.
+         *
+         * This fallback is useful if an unexpected error
+         * is thrown without a meaningful message.
+         */
+        if (
+          error instanceof Error &&
+          !authError
+        ) {
+          await showError(
+            "Registration failed",
+            error.message ||
+              "Please try again.",
+          );
+        }
+      } finally {
+        setSubmitted(false);
+      }
+    };
 
   return (
     <Shell
@@ -757,6 +1026,7 @@ export function Register() {
       {authError && (
         <div
           role="alert"
+          aria-live="polite"
           className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
         >
           <p className="font-bold">
@@ -772,6 +1042,7 @@ export function Register() {
       {successMessage && (
         <div
           role="status"
+          aria-live="polite"
           className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
         >
           <CheckCircle2
@@ -784,7 +1055,7 @@ export function Register() {
               Registration submitted
             </p>
 
-            <p className="mt-1">
+            <p className="mt-1 leading-5">
               {successMessage}
             </p>
           </div>
@@ -832,7 +1103,9 @@ export function Register() {
                     setSelectedRole(
                       option.role,
                     );
+
                     clearAuthError();
+
                     setSuccessMessage(
                       null,
                     );
@@ -881,7 +1154,7 @@ export function Register() {
       </div>
 
       {/* =======================================================
-          REGISTRATION FORM
+          FORM
       ======================================================= */}
 
       <form
@@ -889,10 +1162,11 @@ export function Register() {
           handleSubmit
         }
         className="mt-8 space-y-6"
+        noValidate
       >
-        {/* ---------------------------------------------------
-            Common Details
-        --------------------------------------------------- */}
+        {/* =====================================================
+            ACCOUNT DETAILS
+        ===================================================== */}
 
         <section>
           <div className="mb-4">
@@ -907,6 +1181,8 @@ export function Register() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            {/* Name */}
+
             <div>
               <label
                 className="mb-1.5 block text-xs font-bold text-stone-600"
@@ -933,7 +1209,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "name",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -944,6 +1221,8 @@ export function Register() {
                 />
               </div>
             </div>
+
+            {/* Email */}
 
             <div>
               <label
@@ -972,7 +1251,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "email",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -983,6 +1263,8 @@ export function Register() {
                 />
               </div>
             </div>
+
+            {/* Phone */}
 
             <div>
               <label
@@ -1002,6 +1284,7 @@ export function Register() {
                   id="register-phone"
                   required
                   type="tel"
+                  inputMode="tel"
                   autoComplete="tel"
                   value={
                     form.phone
@@ -1011,7 +1294,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "phone",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1022,6 +1306,8 @@ export function Register() {
                 />
               </div>
             </div>
+
+            {/* City */}
 
             <div>
               <label
@@ -1048,7 +1334,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "city",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1059,6 +1346,8 @@ export function Register() {
                 />
               </div>
             </div>
+
+            {/* State */}
 
             <div>
               <label
@@ -1078,7 +1367,8 @@ export function Register() {
                 ) =>
                   updateField(
                     "state",
-                    event.target
+                    event
+                      .target
                       .value,
                   )
                 }
@@ -1088,6 +1378,8 @@ export function Register() {
                 }
               />
             </div>
+
+            {/* Country */}
 
             <div>
               <label
@@ -1107,7 +1399,8 @@ export function Register() {
                 ) =>
                   updateField(
                     "country",
-                    event.target
+                    event
+                      .target
                       .value,
                   )
                 }
@@ -1119,9 +1412,9 @@ export function Register() {
           </div>
         </section>
 
-        {/* ---------------------------------------------------
-            Security
-        --------------------------------------------------- */}
+        {/* =====================================================
+            SECURITY
+        ===================================================== */}
 
         <section>
           <div className="mb-4">
@@ -1135,6 +1428,8 @@ export function Register() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            {/* Password */}
+
             <div>
               <label
                 className="mb-1.5 block text-xs font-bold text-stone-600"
@@ -1167,7 +1462,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "password",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1205,6 +1501,8 @@ export function Register() {
               </div>
             </div>
 
+            {/* Confirm Password */}
+
             <div>
               <label
                 className="mb-1.5 block text-xs font-bold text-stone-600"
@@ -1237,7 +1535,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "confirmPassword",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1277,9 +1576,9 @@ export function Register() {
           </div>
         </section>
 
-        {/* ---------------------------------------------------
-            Pandit Fields
-        --------------------------------------------------- */}
+        {/* =====================================================
+            PANDIT
+        ===================================================== */}
 
         {selectedRole ===
           "pandit" && (
@@ -1310,6 +1609,8 @@ export function Register() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
+              {/* Title */}
+
               <div>
                 <label
                   className="mb-1.5 block text-xs font-bold text-stone-600"
@@ -1328,16 +1629,19 @@ export function Register() {
                   ) =>
                     updateField(
                       "title",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
-                  placeholder="e.g. Vedic Acharya · Rudrabhishek Specialist"
+                  placeholder="Vedic Acharya · Rudrabhishek Specialist"
                   className={
                     inputClass
                   }
                 />
               </div>
+
+              {/* Experience */}
 
               <div>
                 <label
@@ -1360,16 +1664,19 @@ export function Register() {
                   ) =>
                     updateField(
                       "experienceYears",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
-                  placeholder="e.g. 15"
+                  placeholder="15"
                   className={
                     inputClass
                   }
                 />
               </div>
+
+              {/* District */}
 
               <div>
                 <label
@@ -1389,16 +1696,19 @@ export function Register() {
                   ) =>
                     updateField(
                       "district",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
-                  placeholder="e.g. Varanasi"
+                  placeholder="Varanasi"
                   className={
                     inputClass
                   }
                 />
               </div>
+
+              {/* Languages */}
 
               <div>
                 <label
@@ -1418,7 +1728,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "languages",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1433,6 +1744,8 @@ export function Register() {
                   languages with commas.
                 </p>
               </div>
+
+              {/* Specializations */}
 
               <div>
                 <label
@@ -1452,7 +1765,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "specializations",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1462,6 +1776,8 @@ export function Register() {
                   }
                 />
               </div>
+
+              {/* Puja Types */}
 
               <div>
                 <label
@@ -1481,7 +1797,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "pujaTypes",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1491,6 +1808,8 @@ export function Register() {
                   }
                 />
               </div>
+
+              {/* Associated */}
 
               <div>
                 <label
@@ -1510,7 +1829,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "associatedWith",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1520,6 +1840,8 @@ export function Register() {
                   }
                 />
               </div>
+
+              {/* Availability */}
 
               <div>
                 <label
@@ -1539,7 +1861,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "availability",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1549,6 +1872,8 @@ export function Register() {
                   }
                 />
               </div>
+
+              {/* Service Areas */}
 
               <div className="md:col-span-2">
                 <label
@@ -1568,7 +1893,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "serviceAreas",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1578,6 +1904,8 @@ export function Register() {
                   }
                 />
               </div>
+
+              {/* About */}
 
               <div className="md:col-span-2">
                 <label
@@ -1590,6 +1918,7 @@ export function Register() {
                 <textarea
                   id="pandit-about"
                   rows={5}
+                  maxLength={5000}
                   value={
                     form.about
                   }
@@ -1598,7 +1927,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "about",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1612,9 +1942,9 @@ export function Register() {
           </section>
         )}
 
-        {/* ---------------------------------------------------
-            Temple Manager Fields
-        --------------------------------------------------- */}
+        {/* =====================================================
+            TEMPLE MANAGER
+        ===================================================== */}
 
         {selectedRole ===
           "temple_manager" && (
@@ -1661,7 +1991,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "designation",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1690,7 +2021,8 @@ export function Register() {
                   ) =>
                     updateField(
                       "organizationName",
-                      event.target
+                      event
+                        .target
                         .value,
                     )
                   }
@@ -1704,9 +2036,9 @@ export function Register() {
           </section>
         )}
 
-        {/* ---------------------------------------------------
-            Selected Role Summary
-        --------------------------------------------------- */}
+        {/* =====================================================
+            ROLE SUMMARY
+        ===================================================== */}
 
         <div className="rounded-2xl bg-[#2a1a10] p-4 text-white">
           <div className="flex items-start gap-3">
@@ -1731,9 +2063,9 @@ export function Register() {
           </div>
         </div>
 
-        {/* ---------------------------------------------------
-            Submit
-        --------------------------------------------------- */}
+        {/* =====================================================
+            SUBMIT
+        ===================================================== */}
 
         <button
           type="submit"
@@ -1809,17 +2141,10 @@ export function Forgot() {
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null,
-  );
+  ] = useState<
+    string | null
+  >(null);
 
-  /*
-   * Development token.
-   *
-   * The backend currently returns a reset token
-   * in development so the flow can be tested
-   * before an email provider is connected.
-   */
   const [
     developmentToken,
     setDevelopmentToken,
@@ -1850,6 +2175,12 @@ export function Forgot() {
     setResetDone,
   ] = useState(false);
 
+  /*
+  |--------------------------------------------------------------------------
+  | Request Password Reset
+  |--------------------------------------------------------------------------
+  */
+
   const handleRequestReset =
     async (
       event: FormEvent<HTMLFormElement>,
@@ -1857,6 +2188,34 @@ export function Forgot() {
       event.preventDefault();
 
       setError(null);
+
+      const cleanEmail =
+        email
+          .trim()
+          .toLowerCase();
+
+      if (
+        !cleanEmail
+      ) {
+        setError(
+          "Email address is required.",
+        );
+
+        return;
+      }
+
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          cleanEmail,
+        )
+      ) {
+        setError(
+          "Please enter a valid email address.",
+        );
+
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -1884,7 +2243,7 @@ export function Forgot() {
               body: JSON.stringify(
                 {
                   email:
-                    email.trim(),
+                    cleanEmail,
                 },
               ),
             },
@@ -1906,6 +2265,10 @@ export function Forgot() {
           );
         }
 
+        setEmail(
+          cleanEmail,
+        );
+
         setDone(true);
 
         if (
@@ -1916,7 +2279,10 @@ export function Forgot() {
           setDevelopmentToken(
             data.resetToken,
           );
-          setResetMode(true);
+
+          setResetMode(
+            true,
+          );
         }
       } catch (requestError) {
         setError(
@@ -1929,6 +2295,12 @@ export function Forgot() {
         setLoading(false);
       }
     };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Reset Password
+  |--------------------------------------------------------------------------
+  */
 
   const handleResetPassword =
     async (
@@ -1970,9 +2342,7 @@ export function Forgot() {
         return;
       }
 
-      setResetLoading(
-        true,
-      );
+      setResetLoading(true);
 
       try {
         const response =
@@ -2098,9 +2468,9 @@ export function Forgot() {
             </p>
 
             <p className="mt-1 text-xs leading-relaxed text-amber-800">
-              Email delivery is not connected
-              yet. The backend supplied a
-              temporary development token.
+              Email delivery is not connected yet.
+              The backend supplied a temporary
+              development token.
             </p>
           </div>
 
@@ -2140,6 +2510,7 @@ export function Forgot() {
                 id="new-password"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 type="password"
                 value={
                   newPassword
@@ -2148,7 +2519,8 @@ export function Forgot() {
                   event,
                 ) =>
                   setNewPassword(
-                    event.target
+                    event
+                      .target
                       .value,
                   )
                 }
@@ -2171,6 +2543,7 @@ export function Forgot() {
                 id="confirm-new-password"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 type="password"
                 value={
                   confirmNewPassword
@@ -2179,7 +2552,8 @@ export function Forgot() {
                   event,
                 ) =>
                   setConfirmNewPassword(
-                    event.target
+                    event
+                      .target
                       .value,
                   )
                 }
@@ -2261,6 +2635,7 @@ export function Forgot() {
             handleRequestReset
           }
           className="space-y-4"
+          noValidate
         >
           <div>
             <label
@@ -2279,6 +2654,7 @@ export function Forgot() {
               <input
                 id="forgot-email"
                 required
+                autoFocus
                 type="email"
                 autoComplete="email"
                 value={
@@ -2288,10 +2664,14 @@ export function Forgot() {
                   event,
                 ) => {
                   setEmail(
-                    event.target
+                    event
+                      .target
                       .value,
                   );
-                  setError(null);
+
+                  setError(
+                    null,
+                  );
                 }}
                 placeholder="you@example.com"
                 className={
@@ -2303,7 +2683,9 @@ export function Forgot() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={
+              loading
+            }
             className="btn-saffron flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-bold text-white disabled:opacity-60"
           >
             {loading ? (
