@@ -316,15 +316,15 @@ export default function Footer() {
             </span>
 
             <span>
-              <span className="font-display block text-xl font-bold text-amber-50">
-                Divya
+              <span className="font-display text-[20px] block text-xl font-bold text-amber-50">
+                दिव्य &nbsp;
                 <span className="text-gradient-saffron">
-                  Dhara
+                  धारा
                 </span>
               </span>
 
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-400/80">
-                Sacred Bharat Yatra
+              <span className="block text-[12px] font-semibold uppercase text-amber-400/80">
+                पवित्र भारत यात्रा
               </span>
             </span>
           </Link>

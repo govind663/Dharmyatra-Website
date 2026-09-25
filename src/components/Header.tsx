@@ -797,15 +797,15 @@ export default function Header() {
             </span>
 
             <span className="leading-tight">
-              <span className="font-display block text-[19px] font-bold tracking-tight text-[#2a1a10]">
-                Divya
+              <span className="font-display block text-[20px] text-xl font-bold tracking-tight text-[#2a1a10]">
+                दिव्य &nbsp;
                 <span className="text-gradient-saffron">
-                  Dhara
+                  धारा
                 </span>
               </span>
 
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-700/80">
-                Sacred Bharat Yatra
+              <span className="block text-[12px] font-semibold uppercase  text-orange-700/80">
+                पवित्र भारत यात्रा
               </span>
             </span>
           </Link>
